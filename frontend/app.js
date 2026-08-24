@@ -56,7 +56,9 @@ function renderizarTurnos(turnos) {
 }
 
 // 2. Nueva función para actualizar la base de datos
+// 2. Nueva función para actualizar la base de datos y descontar stock
 async function cambiarEstado(turnoId, nuevoEstado) {
+    // A. Actualizamos el estado (el color) en Supabase como siempre
     const { error } = await clienteDb
         .from('turnos')
         .update({ estado: nuevoEstado })
@@ -65,8 +67,44 @@ async function cambiarEstado(turnoId, nuevoEstado) {
     if (error) {
         alert("Error al actualizar el estado. Revisa los permisos (RLS).");
         console.error(error);
+        return; // Si hay error, nos detenemos aquí
     }
-    // ¡De nuevo, la magia del Tiempo Real actualizará los colores solos!
+
+    // B. ¡NUEVA LÓGICA!: Si el turno se marca como "finalizado", llamamos al Backend
+    if (nuevoEstado === 'finalizado') {
+        // Pedimos los gramos usados con una ventanita simple (luego podemos hacerla más linda)
+        const gramos = prompt("Turno finalizado. ¿Cuántos gramos de 'Tintura Rubio Ceniza' se usaron?");
+
+        if (gramos && !isNaN(gramos)) {
+            // ¡IMPORTANTE! Reemplaza esto con el enlace de tu servidor en Render
+            // Ej: 'https://appflekiyo-backend-xyz1.onrender.com'
+            const RENDER_URL = 'https://apflekiyo.onrender.com'; 
+
+            try {
+                // Le enviamos la orden al servidor por debajo de la mesa
+                const respuesta = await fetch(`${RENDER_URL}/api/finalizar-turno`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        turnoId: turnoId,
+                        insumoId: 1, // El ID 1 es la tintura que creamos en SQL
+                        gramosUsados: parseInt(gramos)
+                    })
+                });
+
+                const resultado = await respuesta.json();
+                
+                // Mostramos el mensaje que nos devuelve el servidor
+                alert(resultado.mensaje || "Hubo un problema: " + resultado.error);
+                
+            } catch (errorRender) {
+                console.error("Error al conectar con Render:", errorRender);
+                alert("El turno finalizó, pero no pudimos conectar con el servidor para descontar el stock.");
+            }
+        } else {
+            alert("No ingresaste una cantidad válida. El stock no se descontó.");
+        }
+    }
 }
 
 // Función preparada para el botón "Agendar Turno"
