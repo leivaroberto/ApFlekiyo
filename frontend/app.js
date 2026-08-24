@@ -21,17 +21,40 @@ async function cargarTurnos() {
 
 function renderizarTurnos(turnos) {
     const contenedor = document.getElementById('lista-turnos');
-    contenedor.innerHTML = ''; // Limpiar grilla
+    contenedor.innerHTML = ''; // Limpiamos la grilla
+
+    if (turnos.length === 0) {
+        contenedor.innerHTML = '<p>No hay turnos programados.</p>';
+        return;
+    }
 
     turnos.forEach(turno => {
         const div = document.createElement('div');
+        // El color del borde izquierdo define el estado (Semáforo)
         div.className = `turno-card estado-${turno.estado}`;
+        
         div.innerHTML = `
-            <strong>ID Turno:</strong> ${turno.id.substring(0, 6)}... <br>
-            <strong>Estado:</strong> <span style="text-transform: capitalize;">${turno.estado}</span>
+            <div>
+                <strong>ID:</strong> ${turno.id.substring(0, 5)}...<br>
+                <span style="color: #666; font-size: 14px;">Estado: <b>${turno.estado.toUpperCase()}</b></span>
+            </div>
+            <div class="etiqueta-peluquero">
+                <!-- Aquí luego pondremos el color real del peluquero -->
+                Estilista Asignado
+            </div>
         `;
         contenedor.appendChild(div);
     });
+}
+
+// Función preparada para el botón "Agendar Turno"
+function crearTurnoNuevo() {
+    const nombre = document.getElementById('input-cliente').value;
+    if(!nombre) {
+        alert("Por favor, ingresa el nombre del cliente.");
+        return;
+    }
+    alert(`¡Listo para programar a ${nombre}! En el próximo paso conectaremos esto a Supabase.`);
 }
 
 // 3. Activar el TIEMPO REAL (El corazón del Tablero)
