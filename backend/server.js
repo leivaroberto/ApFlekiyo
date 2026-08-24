@@ -8,7 +8,7 @@ app.use(express.json()); // Permite recibir datos del frontend
 
 // 1. Conexión a Supabase desde el Servidor
 const SUPABASE_URL = 'https://xpufmicxmbhpqocrwgdz.supabase.co';
-const SUPABASE_ANON_KEY = 'TU_CLAVE_ANON_AQUI'; // Pega tu clave súper larga aquí
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwdWZtaWN4bWJocHFvY3J3Z2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MzE1OTcsImV4cCI6MjEwMzEwNzU5N30.811oNtrlBbEvNvhxaLlvJBZtqSpU98ZQ9sORRh4EIu8'; // Pega tu clave súper larga aquí
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2. Ruta de diagnóstico (la que probaste antes)
