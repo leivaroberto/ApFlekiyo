@@ -48,13 +48,64 @@ function renderizarTurnos(turnos) {
 }
 
 // Función preparada para el botón "Agendar Turno"
-function crearTurnoNuevo() {
-    const nombre = document.getElementById('input-cliente').value;
-    if(!nombre) {
+// Función para crear un turno real en Supabase
+async function crearTurnoNuevo() {
+    const nombreCliente = document.getElementById('input-cliente').value;
+
+    if(!nombreCliente) {
         alert("Por favor, ingresa el nombre del cliente.");
         return;
     }
-    alert(`¡Listo para programar a ${nombre}! En el próximo paso conectaremos esto a Supabase.`);
+
+    // 1. Creamos al cliente en la base de datos
+    const { data: clienteData, error: errorCliente } = await clienteDb
+        .from('clientes')
+        .insert([{ nombre: nombreCliente, telefono: 'Sin asignar' }])
+        .select();
+
+    if (errorCliente) {
+        alert("Error al crear el cliente.");
+        console.error(errorCliente);
+        return;
+    }
+    const nuevoClienteId = clienteData[0].id;
+
+    // 2. Buscamos al primer peluquero disponible en tu base de datos
+    const { data: peluqueros } = await clienteDb
+        .from('peluqueros')
+        .select('id')
+        .limit(1);
+    
+    if (!peluqueros || peluqueros.length === 0) {
+        alert("No hay peluqueros creados en la base de datos.");
+        return;
+    }
+    const peluqueroId = peluqueros[0].id;
+
+    // 3. Creamos el turno (Programado para el momento actual, duración 1 hora)
+    const fechaInicio = new Date();
+    const fechaFin = new Date(fechaInicio.getTime() + (60 * 60 * 1000)); // Suma 1 hora
+
+    const { error: errorTurno } = await clienteDb
+        .from('turnos')
+        .insert([{
+            cliente_id: nuevoClienteId,
+            peluquero_id: peluqueroId,
+            fecha_hora_inicio: fechaInicio.toISOString(),
+            fecha_hora_fin: fechaFin.toISOString(),
+            estado: 'programado'
+        }]);
+
+    if (errorTurno) {
+        alert("Error al guardar el turno en el calendario.");
+        console.error(errorTurno);
+    } else {
+        // Limpiamos la cajita de texto para que quede lista para otro cliente
+        document.getElementById('input-cliente').value = '';
+        
+        // ¡LA MAGIA!: No necesitamos decirle a la pantalla que se actualice.
+        // El sistema de "Tiempo Real" detectará esto y dibujará el turno solo.
+    }
 }
 
 // 3. Activar el TIEMPO REAL (El corazón del Tablero)
