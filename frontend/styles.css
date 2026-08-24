@@ -87,6 +87,28 @@ body {
     font-size: 12px;
     font-weight: bold;
 }
+/* Colores del Semáforo de Estados */
+.estado-programado {
+    border-left: 6px solid #95a5a6; /* Gris - Esperando */
+}
+.estado-check-in {
+    border-left: 6px solid #f1c40f; /* Amarillo - Llegó a la peluquería */
+}
+.estado-en_proceso {
+    border-left: 6px solid #e67e22; /* Naranja - En la silla */
+}
+.estado-finalizado {
+    border-left: 6px solid #2ecc71; /* Verde - Terminado */
+}
+
+/* Estilo para el selector de estado en la tarjeta */
+.selector-estado {
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin-top: 10px;
+    font-size: 14px;
+}
 /* Sistema de Semáforo */
 .estado-programado { border-left-color: #95a5a6; } /* Gris */
 .estado-check-in { border-left-color: #f1c40f; }   /* Amarillo */
