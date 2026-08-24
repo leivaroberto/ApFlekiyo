@@ -19,9 +19,10 @@ async function cargarTurnos() {
     renderizarTurnos(turnos);
 }
 
+// 1. Modificamos cómo se dibuja la tarjeta
 function renderizarTurnos(turnos) {
     const contenedor = document.getElementById('lista-turnos');
-    contenedor.innerHTML = ''; // Limpiamos la grilla
+    contenedor.innerHTML = ''; 
 
     if (turnos.length === 0) {
         contenedor.innerHTML = '<p>No hay turnos programados.</p>';
@@ -30,21 +31,37 @@ function renderizarTurnos(turnos) {
 
     turnos.forEach(turno => {
         const div = document.createElement('div');
-        // El color del borde izquierdo define el estado (Semáforo)
         div.className = `turno-card estado-${turno.estado}`;
         
+        // Agregamos un menú desplegable para cambiar el estado
         div.innerHTML = `
             <div>
-                <strong>ID:</strong> ${turno.id.substring(0, 5)}...<br>
-                <span style="color: #666; font-size: 14px;">Estado: <b>${turno.estado.toUpperCase()}</b></span>
+                <strong>Turno:</strong> ${turno.id.substring(0, 5)}<br>
+                <select class="selector-estado" onchange="cambiarEstado('${turno.id}', this.value)">
+                    <option value="programado" ${turno.estado === 'programado' ? 'selected' : ''}>Programado (Gris)</option>
+                    <option value="check-in" ${turno.estado === 'check-in' ? 'selected' : ''}>Check-in (Amarillo)</option>
+                    <option value="en_proceso" ${turno.estado === 'en_proceso' ? 'selected' : ''}>En Proceso (Naranja)</option>
+                    <option value="finalizado" ${turno.estado === 'finalizado' ? 'selected' : ''}>Finalizado (Verde)</option>
+                </select>
             </div>
-            <div class="etiqueta-peluquero">
-                <!-- Aquí luego pondremos el color real del peluquero -->
-                Estilista Asignado
-            </div>
+            <div class="etiqueta-peluquero">Estilista</div>
         `;
         contenedor.appendChild(div);
     });
+}
+
+// 2. Nueva función para actualizar la base de datos
+async function cambiarEstado(turnoId, nuevoEstado) {
+    const { error } = await clienteDb
+        .from('turnos')
+        .update({ estado: nuevoEstado })
+        .eq('id', turnoId);
+
+    if (error) {
+        alert("Error al actualizar el estado. Revisa los permisos (RLS).");
+        console.error(error);
+    }
+    // ¡De nuevo, la magia del Tiempo Real actualizará los colores solos!
 }
 
 // Función preparada para el botón "Agendar Turno"
