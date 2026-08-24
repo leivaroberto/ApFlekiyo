@@ -7,12 +7,13 @@ const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2. Función para mostrar turnos en la pantalla
 async function cargarTurnos() {
+    // Le pedimos a Supabase que "una" la tabla turnos con la tabla peluqueros
     const { data: turnos, error } = await clienteDb
         .from('turnos')
-        .select('*');
+        .select('*, peluqueros(nombre, color_calendario)');
 
     if (error) {
-        console.error('Error al cargar turnos:', error);
+        console.error("Error al cargar turnos:", error);
         return;
     }
 
