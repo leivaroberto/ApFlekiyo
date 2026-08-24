@@ -2,11 +2,12 @@
 const SUPABASE_URL = 'https://xpufmicxmbhpqocrwgdz.supabase.co/rest/v1/';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwdWZtaWN4bWJocHFvY3J3Z2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MzE1OTcsImV4cCI6MjEwMzEwNzU5N30.811oNtrlBbEvNvhxaLlvJBZtqSpU98ZQ9sORRh4EIu8';
 
-const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Le cambiamos el nombre a 'clienteDb' para que no choque con la librería
+const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2. Función para mostrar turnos en la pantalla
 async function cargarTurnos() {
-    const { data: turnos, error } = await supabase
+    const { data: turnos, error } = await clienteDb
         .from('turnos')
         .select('*');
 
@@ -34,7 +35,7 @@ function renderizarTurnos(turnos) {
 }
 
 // 3. Activar el TIEMPO REAL (El corazón del Tablero)
-supabase
+clienteDb
   .channel('cambios-en-turnos')
   .on(
     'postgres_changes',
