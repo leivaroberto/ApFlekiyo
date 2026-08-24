@@ -11,16 +11,29 @@
 <body>
     <header class="header">
         <h1>AppFlekiyo</h1>
-        <p>Tablero de Control y Calendario</p>
+        <p>Tablero de Control - Recepción</p>
     </header>
 
-    <main class="calendario-container">
-        <h2>Turnos del Día</h2>
-        <div id="lista-turnos" class="grilla-turnos">
-            <!-- Los turnos aparecerán aquí gracias a JavaScript -->
-            <p>Cargando turnos...</p>
-        </div>
-    </main>
+    <div class="contenedor-principal">
+        <!-- Panel para crear turnos -->
+        <aside class="panel-control">
+            <h3>Agendar Nuevo Turno</h3>
+            <input type="text" id="input-cliente" placeholder="Nombre del Cliente (Ej. María)">
+            <select id="select-peluquero">
+                <option value="1">Peluquero 1</option>
+                <option value="2">Peluquero 2</option>
+            </select>
+            <button onclick="crearTurnoNuevo()" class="btn-agendar">Guardar Turno</button>
+        </aside>
+
+        <!-- Calendario visual -->
+        <main class="calendario-container">
+            <h2>Turnos de Hoy</h2>
+            <div id="lista-turnos" class="grilla-turnos">
+                <p>Cargando turnos...</p>
+            </div>
+        </main>
+    </div>
 
     <script src="app.js"></script>
 </body>
