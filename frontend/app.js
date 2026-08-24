@@ -45,7 +45,12 @@ function renderizarTurnos(turnos) {
                     <option value="finalizado" ${turno.estado === 'finalizado' ? 'selected' : ''}>Finalizado (Verde)</option>
                 </select>
             </div>
-            <div class="etiqueta-peluquero">Estilista</div>
+            <!-- ¡Aquí aplicamos el nombre y el color real! -->
+            <div class="etiqueta-peluquero" style="background-color: ${turno.peluqueros.color_calendario};">
+                ${turno.peluqueros.nombre}
+            </div>
+        `;
+        contenedor.appendChild(div);
         `;
         contenedor.appendChild(div);
     });
