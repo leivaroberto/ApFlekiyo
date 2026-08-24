@@ -21,6 +21,7 @@ async function cargarTurnos() {
 }
 
 // 1. Modificamos cómo se dibuja la tarjeta
+// 1. Modificamos cómo se dibuja la tarjeta
 function renderizarTurnos(turnos) {
     const contenedor = document.getElementById('lista-turnos');
     contenedor.innerHTML = ''; 
@@ -45,12 +46,10 @@ function renderizarTurnos(turnos) {
                     <option value="finalizado" ${turno.estado === 'finalizado' ? 'selected' : ''}>Finalizado (Verde)</option>
                 </select>
             </div>
-            <!-- ¡Aquí aplicamos el nombre y el color real! -->
-            <div class="etiqueta-peluquero" style="background-color: ${turno.peluqueros.color_calendario};">
-                ${turno.peluqueros.nombre}
+            <!-- Aplicamos el nombre y el color real con salvavidas (?.) -->
+            <div class="etiqueta-peluquero" style="background-color: ${turno.peluqueros?.color_calendario || '#ccc'};">
+                ${turno.peluqueros?.nombre || 'Sin asignar'}
             </div>
-        `;
-        contenedor.appendChild(div);
         `;
         contenedor.appendChild(div);
     });
