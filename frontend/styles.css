@@ -134,6 +134,58 @@ body {
     color: #e74c3c; /* Rojo alerta */
     font-weight: bold;
 }
+/* --- Estilos para la Caja --- */
+.panel-caja {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 250px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+.totales-caja { 
+    margin-bottom: 10px; 
+    font-size: 16px;
+    font-weight: bold; 
+    border-bottom: 2px solid #eee; 
+    padding-bottom: 10px; 
+}
+.comision-item { 
+    display: flex; 
+    justify-content: space-between; 
+    padding: 8px 0; 
+    border-bottom: 1px solid #f9f9f9; 
+    font-size: 14px;
+}
+
+/* --- OPTIMIZACIÓN PARA CELULARES (Responsive) --- */
+@media (max-width: 768px) {
+    .contenedor-principal {
+        flex-direction: column; /* Apila las columnas verticalmente */
+    }
+    
+    .columna-izquierda {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 15px; /* Espacio entre los paneles */
+    }
+    
+    .panel-control, .panel-panol, .panel-caja {
+        width: 100%;
+        margin-top: 0 !important;
+        box-sizing: border-box;
+    }
+    
+    .turno-card {
+        flex-direction: column; /* Apila el contenido de la tarjeta del turno */
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .etiqueta-peluquero {
+        align-self: flex-start;
+    }
+}
 /* Sistema de Semáforo */
 .estado-programado { border-left-color: #95a5a6; } /* Gris */
 .estado-check-in { border-left-color: #f1c40f; }   /* Amarillo */
