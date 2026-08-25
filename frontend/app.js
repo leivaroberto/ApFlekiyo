@@ -181,6 +181,59 @@ clienteDb
     }
   )
   .subscribe();
+// --- NUEVO: LÓGICA DEL PAÑOL ---
 
+async function cargarInventario() {
+    const { data: insumos, error } = await clienteDb
+        .from('insumos')
+        .select('*')
+        .order('nombre', { ascending: true });
+
+    if (error) {
+        console.error("Error al cargar inventario:", error);
+        return;
+    }
+    renderizarInventario(insumos);
+}
+
+function renderizarInventario(insumos) {
+    const contenedor = document.getElementById('lista-insumos');
+    contenedor.innerHTML = '';
+
+    if (insumos.length === 0) {
+        contenedor.innerHTML = '<p>No hay productos en el pañol.</p>';
+        return;
+    }
+
+    insumos.forEach(insumo => {
+        const div = document.createElement('div');
+        div.className = 'item-insumo';
+        
+        // Si el stock cae por debajo de 100g, se pinta de rojo
+        const claseStock = insumo.stock_gramos < 100 ? 'stock-bajo' : '';
+
+        div.innerHTML = `
+            <span>${insumo.nombre}</span>
+            <span class="${claseStock}">${insumo.stock_gramos}g</span>
+        `;
+        contenedor.appendChild(div);
+    });
+}
+
+// Escuchar cambios en tiempo real en el Pañol
+clienteDb
+  .channel('cambios-en-insumos')
+  .on(
+    'postgres_changes',
+    { event: '*', schema: 'public', table: 'insumos' },
+    (payload) => {
+      cargarInventario(); // Recarga la lista si alguien descuenta stock
+    }
+  )
+  .subscribe();
+
+// --- INICIO DE LA APP ---
+// Asegúrate de llamar a esta función al final de tu archivo para que arranque
+cargarInventario();
 // Iniciar la app al abrir la pantalla
 cargarTurnos();
