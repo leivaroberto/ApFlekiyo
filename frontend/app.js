@@ -242,7 +242,77 @@ clienteDb
     }
   )
   .subscribe();
+// --- NUEVO: LÓGICA DE CAJA Y COMISIONES ---
 
+async function cargarCaja() {
+    // Calculamos el inicio del día de hoy para buscar solo lo que se cobró hoy
+    const inicioDelDia = new Date();
+    inicioDelDia.setHours(0, 0, 0, 0);
+
+    // Buscamos los pagos uniendo la tabla caja con la tabla peluqueros
+    const { data: registros, error } = await clienteDb
+        .from('caja')
+        .select('monto_total, monto_comision, peluqueros(nombre)')
+        .gte('fecha_cobro', inicioDelDia.toISOString());
+
+    if (error) {
+        console.error("Error al cargar caja:", error);
+        return;
+    }
+
+    renderizarCaja(registros);
+}
+
+function renderizarCaja(registros) {
+    const contenedor = document.getElementById('resumen-caja');
+    
+    if (registros.length === 0) {
+        contenedor.innerHTML = '<p>No hay ingresos aún hoy.</p>';
+        return;
+    }
+
+    let totalCaja = 0;
+    const comisiones = {};
+
+    // Recorremos todos los cobros y vamos sumando
+    registros.forEach(reg => {
+        totalCaja += Number(reg.monto_total);
+        
+        const nombrePeluquero = reg.peluqueros?.nombre || 'Sin asignar';
+        if (!comisiones[nombrePeluquero]) {
+            comisiones[nombrePeluquero] = 0;
+        }
+        comisiones[nombrePeluquero] += Number(reg.monto_comision);
+    });
+
+    // Armamos el HTML con los resultados
+    let html = `<div class="totales-caja">Total Ingresos: $${totalCaja.toLocaleString()}</div>`;
+    html += `<strong>Comisiones a pagar:</strong>`;
+    
+    for (const [nombre, monto] of Object.entries(comisiones)) {
+        html += `
+            <div class="comision-item">
+                <span>${nombre}</span>
+                <span style="color: #27ae60; font-weight: bold;">$${monto.toLocaleString()}</span>
+            </div>
+        `;
+    }
+
+    contenedor.innerHTML = html;
+}
+
+// Activar el Tiempo Real para la caja registradora
+clienteDb
+  .channel('cambios-en-caja')
+  .on('postgres_changes', { event: '*', schema: 'public', table: 'caja' }, () => {
+      cargarCaja(); // Actualiza los números si alguien hace un cobro
+  })
+  .subscribe();
+
+// --- NO OLVIDES AGREGAR ESTO A TUS LÍNEAS DE INICIO ---
+// Busca la parte final de tu código donde dice cargarTurnos() y cargarInventario() 
+// y agrega esto:
+cargarCaja();
 // --- INICIO DE LA APP ---
 // Asegúrate de llamar a esta función al final de tu archivo para que arranque
 cargarInventario();
