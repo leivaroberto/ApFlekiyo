@@ -21,7 +21,6 @@ async function cargarTurnos() {
 }
 
 // 1. Modificamos cómo se dibuja la tarjeta
-// 1. Modificamos cómo se dibuja la tarjeta
 function renderizarTurnos(turnos) {
     const contenedor = document.getElementById('lista-turnos');
     contenedor.innerHTML = ''; 
@@ -55,57 +54,69 @@ function renderizarTurnos(turnos) {
     });
 }
 
-// 2. Nueva función para actualizar la base de datos
-// 2. Nueva función para actualizar la base de datos y descontar stock
+// 2. Nueva función para actualizar la base de datos, descontar stock Y registrar el pago
 async function cambiarEstado(turnoId, nuevoEstado) {
-    // A. Actualizamos el estado (el color) en Supabase como siempre
+    // A. Actualizamos el color en Supabase como siempre
     const { error } = await clienteDb
         .from('turnos')
         .update({ estado: nuevoEstado })
         .eq('id', turnoId);
 
     if (error) {
-        alert("Error al actualizar el estado. Revisa los permisos (RLS).");
+        alert("Error al actualizar el estado. Revisa los permisos.");
         console.error(error);
-        return; // Si hay error, nos detenemos aquí
+        return; 
     }
 
-    // B. ¡NUEVA LÓGICA!: Si el turno se marca como "finalizado", llamamos al Backend
+    // B. ¡LÓGICA DE STOCK Y CAJA!
     if (nuevoEstado === 'finalizado') {
-        // Pedimos los gramos usados con una ventanita simple (luego podemos hacerla más linda)
-        const gramos = prompt("Turno finalizado. ¿Cuántos gramos de 'Tintura Rubio Ceniza' se usaron?");
+        // 1. Preguntamos los insumos
+        const gramos = prompt("Turno finalizado. ¿Cuántos gramos de Tintura se usaron? (Si no usó, escribe 0)");
+        
+        // 2. Preguntamos el pago
+        const precio = prompt("¿Cuál fue el precio total cobrado al cliente? (Ej: 15000)");
 
-        if (gramos && !isNaN(gramos)) {
-            // ¡IMPORTANTE! Reemplaza esto con el enlace de tu servidor en Render
+        if (gramos !== null && precio !== null) {
+            // ¡PEGA AQUÍ TU ENLACE DE RENDER! (Sin la barra / al final)
             // Ej: 'https://appflekiyo-backend-xyz1.onrender.com'
             const RENDER_URL = 'https://apflekiyo.onrender.com'; 
 
             try {
-                // Le enviamos la orden al servidor por debajo de la mesa
+                // Averiguamos qué peluquero atendió este turno para darle su comisión
+                const { data: turnoInfo } = await clienteDb
+                    .from('turnos')
+                    .select('peluquero_id')
+                    .eq('id', turnoId)
+                    .single();
+
+                // Le enviamos TODO el paquete de datos a tu servidor en Render
                 const respuesta = await fetch(`${RENDER_URL}/api/finalizar-turno`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         turnoId: turnoId,
-                        insumoId: 1, // El ID 1 es la tintura que creamos en SQL
-                        gramosUsados: parseInt(gramos)
+                        peluqueroId: turnoInfo.peluquero_id,
+                        insumoId: 1, 
+                        gramosUsados: parseInt(gramos) || 0, // Convierte texto a número
+                        precioTotal: parseFloat(precio) || 0 // Convierte texto a precio
                     })
                 });
 
                 const resultado = await respuesta.json();
                 
-                // Mostramos el mensaje que nos devuelve el servidor
+                // Render nos avisa si todo salió bien
                 alert(resultado.mensaje || "Hubo un problema: " + resultado.error);
                 
             } catch (errorRender) {
                 console.error("Error al conectar con Render:", errorRender);
-                alert("El turno finalizó, pero no pudimos conectar con el servidor para descontar el stock.");
+                alert("El turno finalizó, pero no pudimos conectar con el servidor para la caja.");
             }
         } else {
-            alert("No ingresaste una cantidad válida. El stock no se descontó.");
+            alert("Operación cancelada. El turno se marcó como finalizado pero no se registraron los pagos ni el stock.");
         }
     }
 }
+
 
 // Función preparada para el botón "Agendar Turno"
 // Función para crear un turno real en Supabase
