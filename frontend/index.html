@@ -14,18 +14,25 @@
         <p>Tablero de Control - Recepción</p>
     </header>
 
-    <div class="contenedor-principal">
-        <!-- Panel para crear turnos -->
-        <aside class="panel-control">
-            <h3>Agendar Nuevo Turno</h3>
-            <input type="text" id="input-cliente" placeholder="Nombre del Cliente (Ej. María)">
+   <div class="contenedor-principal">
+        <!-- Columna Izquierda: Controles -->
+        <div class="columna-izquierda">
+            <aside class="panel-control">
+                <h3>Agendar Nuevo Turno</h3>
+                <input type="text" id="input-cliente" placeholder="Nombre del Cliente (Ej. María)">
             <select id="select-peluquero">
                 <option value="1">Peluquero 1</option>
                 <option value="2">Peluquero 2</option>
             </select>
             <button onclick="crearTurnoNuevo()" class="btn-agendar">Guardar Turno</button>
         </aside>
-
+        <!-- NUEVO: Panel del Pañol -->
+            <aside class="panel-panol" style="margin-top: 20px;">
+                <h3>📦 Pañol (Stock)</h3>
+                <div id="lista-insumos">
+                    <p>Cargando stock...</p>
+                </div>
+            </aside>
         <!-- Calendario visual -->
         <main class="calendario-container">
             <h2>Turnos de Hoy</h2>
