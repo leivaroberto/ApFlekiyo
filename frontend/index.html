@@ -145,16 +145,35 @@
         </div>
     </div>
 
-    <!-- SOLAPA 5: Pañol Completo (Para cargar más productos) -->
+   <!-- SOLAPA 5: Pañol Completo (Para cargar más productos) -->
     <div id="solapa-productos" class="contenido-solapa">
         <h2>📦 Gestión de Productos del Pañol</h2>
-        <p>Módulo en construcción...</p>
-    </div>
+        <p>Agrega nuevos insumos al inventario o suma stock a los productos existentes cuando recibas mercadería.</p>
 
-    <!-- SOLAPA 6: Caja Mensual -->
-    <div id="solapa-caja-mes" class="contenido-solapa">
-        <h2>💰 Liquidación de Caja y Comisiones del Mes</h2>
-        <p>Módulo en construcción...</p>
+        <div class="contenedor-productos">
+            <!-- Formulario para Crear Producto Nuevo -->
+            <aside class="panel-formulario">
+                <h3>➕ Crear Nuevo Insumo</h3>
+                <div class="grupo-input">
+                    <label>Nombre del producto:</label>
+                    <input type="text" id="nuevo-producto-nombre" placeholder="Ej. Decolorante en Polvo">
+                </div>
+                <div class="grupo-input">
+                    <label>Stock Inicial (Gramos/Cant):</label>
+                    <input type="number" id="nuevo-producto-stock" placeholder="Ej. 1000">
+                </div>
+                <button onclick="crearProductoNuevo()" class="btn-accion">Guardar Producto</button>
+                <p id="mensaje-producto" class="mensaje-exito"></p>
+            </aside>
+
+            <!-- Lista de Productos para sumar stock -->
+            <main class="panel-buscador">
+                <h3>📋 Inventario Actual</h3>
+                <div id="lista-productos-admin" class="grilla-admin-productos">
+                    <p>Cargando inventario...</p>
+                </div>
+            </main>
+        </div>
     </div>
 
     <!-- Archivo del motor lógico (Siempre va al final) -->
