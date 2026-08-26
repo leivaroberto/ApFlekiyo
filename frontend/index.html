@@ -99,7 +99,38 @@
             </main>
         </div>
     </div>
+<!-- SOLAPA 3: Nuevo Turno Avanzado (Con calendario y horario) -->
+    <div id="solapa-nuevo-turno" class="contenido-solapa">
+        <h2>➕ Reservar Turno Completo</h2>
+        <p>Selecciona un cliente, su profesional y la fecha exacta del turno.</p>
+        
+        <div class="panel-formulario-avanzado">
+            
+            <div class="grupo-input">
+                <label>👤 Cliente:</label>
+                <select id="select-cliente-avanzado">
+                    <option value="">Cargando lista de clientes...</option>
+                </select>
+            </div>
 
+            <div class="grupo-input">
+                <label>✂️ Peluquero:</label>
+                <select id="select-peluquero-avanzado">
+                    <option value="">Cargando peluqueros...</option>
+                </select>
+            </div>
+
+            <div class="grupo-input">
+                <label>📆 Fecha y Hora del Turno:</label>
+                <!-- Input especial que abre el calendario y reloj del celular/PC -->
+                <input type="datetime-local" id="fecha-hora-turno">
+            </div>
+
+            <button onclick="agendarTurnoAvanzado()" class="btn-accion">Confirmar Reserva</button>
+            <p id="mensaje-reserva" class="mensaje-exito"></p>
+            
+        </div>
+    </div>
     <!-- SOLAPA 4: Próximos 7 días (Con confirmación de WhatsApp) -->
     <div id="solapa-proximos" class="contenido-solapa">
         <h2>📆 Turnos de los próximos 7 días</h2>
