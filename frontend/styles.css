@@ -186,6 +186,35 @@ body {
         align-self: flex-start;
     }
 }
+/* Estilos del Menú de Solapas */
+.menu-solapas {
+    display: flex;
+    gap: 10px;
+    padding: 15px 20px;
+    background: #f1f2f6;
+    overflow-x: auto; /* Permite deslizar con el dedo en celulares */
+}
+.btn-solapa {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background: #ddd;
+    cursor: pointer;
+    font-weight: bold;
+    white-space: nowrap;
+}
+.btn-solapa.activo {
+    background: #3498db;
+    color: white;
+}
+/* Control de visibilidad de las solapas */
+.contenido-solapa {
+    display: none;
+    padding: 20px;
+}
+.contenido-solapa.activa {
+    display: block;
+}
 /* Sistema de Semáforo */
 .estado-programado { border-left-color: #95a5a6; } /* Gris */
 .estado-check-in { border-left-color: #f1c40f; }   /* Amarillo */
