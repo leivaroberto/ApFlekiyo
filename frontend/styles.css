@@ -276,6 +276,37 @@ body {
         box-sizing: border-box;
     }
 }
+/* --- Estilos para Módulo de Nuevo Turno Avanzado --- */
+.panel-formulario-avanzado {
+    background: white;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    max-width: 500px; /* Evita que el formulario sea gigante en la PC */
+    margin-top: 20px;
+}
+.grupo-input {
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+}
+.grupo-input label {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: #2c3e50;
+    font-size: 14px;
+}
+.grupo-input select, .grupo-input input {
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px; /* Letra grande para que sea fácil leer */
+    background-color: #fcfcfc;
+}
+.grupo-input select:focus, .grupo-input input:focus {
+    border-color: #3498db;
+    outline: none;
+}
 /* Sistema de Semáforo */
 .estado-programado { border-left-color: #95a5a6; } /* Gris */
 .estado-check-in { border-left-color: #f1c40f; }   /* Amarillo */
