@@ -69,15 +69,35 @@
     </div>
 
     <!-- SOLAPA 2: Clientes e Historial -->
+   <!-- SOLAPA 2: Clientes e Historial -->
     <div id="solapa-clientes" class="contenido-solapa">
-        <h2>👥 Búsqueda e Historial de Clientes</h2>
-        <p>Módulo en construcción...</p>
-    </div>
+        <h2>👥 Gestión de Clientes</h2>
+        
+        <div class="contenedor-clientes">
+            <!-- Formulario para Nuevo Cliente -->
+            <aside class="panel-formulario">
+                <h3>➕ Cargar Nuevo Cliente</h3>
+                <input type="text" id="nuevo-cliente-nombre" placeholder="Nombre (Ej. María)">
+                <input type="text" id="nuevo-cliente-apellido" placeholder="Apellido (Ej. Gómez)">
+                <input type="text" id="nuevo-cliente-telefono" placeholder="Teléfono (Ej. 299-1234567)">
+                <button onclick="guardarCliente()" class="btn-accion">Guardar Cliente</button>
+                <p id="mensaje-cliente" class="mensaje-exito"></p>
+            </aside>
 
-    <!-- SOLAPA 3: Nuevo Turno Avanzado (Con calendario y horario) -->
-    <div id="solapa-nuevo-turno" class="contenido-solapa">
-        <h2>➕ Reservar Turno Completo</h2>
-        <p>Módulo en construcción...</p>
+            <!-- Buscador y Ficha del Cliente -->
+            <main class="panel-buscador">
+                <h3>🔍 Buscar Cliente e Historial</h3>
+                <div class="busqueda-grupo">
+                    <input type="text" id="buscador-cliente" placeholder="Buscar por nombre o apellido...">
+                    <button onclick="buscarCliente()" class="btn-accion-buscar">Buscar</button>
+                </div>
+                
+                <!-- Aquí dibujaremos la información y la tabla de historial con JavaScript -->
+                <div id="resultado-busqueda" class="resultado-historial">
+                    <p>Ingresa un nombre para ver su historial de turnos y pagos.</p>
+                </div>
+            </main>
+        </div>
     </div>
 
     <!-- SOLAPA 4: Próximos 7 días (Con confirmación de WhatsApp) -->
