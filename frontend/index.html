@@ -69,7 +69,7 @@
     </div>
 
     <!-- SOLAPA 2: Clientes e Historial -->
-   <!-- SOLAPA 2: Clientes e Historial -->
+  
     <div id="solapa-clientes" class="contenido-solapa">
         <h2>👥 Gestión de Clientes</h2>
         
@@ -131,10 +131,18 @@
             
         </div>
     </div>
+    
     <!-- SOLAPA 4: Próximos 7 días (Con confirmación de WhatsApp) -->
     <div id="solapa-proximos" class="contenido-solapa">
         <h2>📆 Turnos de los próximos 7 días</h2>
-        <p>Módulo en construcción...</p>
+        <p>Revisa la agenda de la semana y envía recordatorios automáticos.</p>
+        
+        <!-- Botón para forzar la recarga por si acaso -->
+        <button onclick="cargarProximosTurnos()" class="btn-accion-buscar" style="margin-bottom: 15px;">🔄 Actualizar Lista</button>
+        
+        <div id="lista-proximos-turnos" class="grilla-proximos">
+            <p>Haz clic en "Actualizar Lista" para cargar los turnos...</p>
+        </div>
     </div>
 
     <!-- SOLAPA 5: Pañol Completo (Para cargar más productos) -->
