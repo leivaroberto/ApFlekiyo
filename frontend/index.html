@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AppFlekiyo - Tablero de Control</title>
+    <title>AppFlekiyo - Sistema de Gestión</title>
     <link rel="stylesheet" href="styles.css">
     <!-- Librería de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -11,47 +11,94 @@
 <body>
     <header class="header">
         <h1>AppFlekiyo</h1>
-        <p>Tablero de Control - Recepción</p>
+        <p>Sistema de Gestión Integral</p>
     </header>
 
-    <div class="contenedor-principal">
-        <!-- Columna Izquierda: Controles y Pañol -->
-        <div class="columna-izquierda">
-            <aside class="panel-control">
-                <h3>Agendar Nuevo Turno</h3>
-                <input type="text" id="input-cliente" placeholder="Nombre del Cliente (Ej. María)">
-                <select id="select-peluquero">
-                    <option value="1">Peluquero 1</option>
-                    <option value="2">Peluquero 2</option>
-                </select>
-                <button onclick="crearTurnoNuevo()" class="btn-agendar">Guardar Turno</button>
-            </aside>
+    <!-- MENÚ DE PESTAÑAS (Navegación principal) -->
+    <nav class="menu-solapas">
+        <button class="btn-solapa activo" onclick="abrirSolapa('solapa-hoy', event)">📅 Turnos de Hoy</button>
+        <button class="btn-solapa" onclick="abrirSolapa('solapa-clientes', event)">👥 Clientes</button>
+        <button class="btn-solapa" onclick="abrirSolapa('solapa-nuevo-turno', event)">➕ Nuevo Turno</button>
+        <button class="btn-solapa" onclick="abrirSolapa('solapa-proximos', event)">📆 Próximos 7 Días</button>
+        <button class="btn-solapa" onclick="abrirSolapa('solapa-productos', event)">📦 Productos</button>
+        <button class="btn-solapa" onclick="abrirSolapa('solapa-caja-mes', event)">💰 Caja del Mes</button>
+    </nav>
 
-            <!-- NUEVO: Panel del Pañol -->
-            <aside class="panel-panol" style="margin-top: 20px;">
-                <h3>📦 Pañol (Stock)</h3>
-                <div id="lista-insumos">
-                    <p>Cargando stock...</p>
-                </div>
-            </aside>
-            <!-- NUEVO: Panel de Caja y Comisiones -->
-            <aside class="panel-caja" style="margin-top: 20px;">
-                <h3>💰 Caja de Hoy</h3>
-                <div id="resumen-caja">
-                    <p>Calculando ingresos...</p>
-                </div>
-            </aside>
-        </div> <!-- ¡AQUÍ ESTÁ EL CIERRE QUE FALTABA! -->
+    <!-- SOLAPA 1: Turnos de Hoy (Tu tablero actual interactivo) -->
+    <div id="solapa-hoy" class="contenido-solapa activa">
+        <div class="contenedor-principal">
+            
+            <!-- Columna Izquierda: Controles y Resúmenes rápidos -->
+            <div class="columna-izquierda">
+                
+                <aside class="panel-control">
+                    <h3>Agendar Turno Rápido</h3>
+                    <input type="text" id="input-cliente" placeholder="Nombre del Cliente (Ej. María)">
+                    <select id="select-peluquero">
+                        <option value="1">Peluquero 1</option>
+                        <option value="2">Peluquero 2</option>
+                    </select>
+                    <button onclick="crearTurnoNuevo()" class="btn-agendar">Guardar Turno</button>
+                </aside>
 
-        <!-- Calendario visual -->
-        <main class="calendario-container">
-            <h2>Turnos de Hoy</h2>
-            <div id="lista-turnos" class="grilla-turnos">
-                <p>Cargando turnos...</p>
-            </div>
-        </main>
+                <aside class="panel-panol" style="margin-top: 20px;">
+                    <h3>📦 Pañol (Stock)</h3>
+                    <div id="lista-insumos">
+                        <p>Cargando stock...</p>
+                    </div>
+                </aside>
+
+                <aside class="panel-caja" style="margin-top: 20px;">
+                    <h3>💰 Caja de Hoy</h3>
+                    <div id="resumen-caja">
+                        <p>Calculando ingresos...</p>
+                    </div>
+                </aside>
+                
+            </div> <!-- Fin columna izquierda -->
+
+            <!-- Grilla Visual de Turnos -->
+            <main class="calendario-container">
+                <h2>Turnos de Hoy</h2>
+                <div id="lista-turnos" class="grilla-turnos">
+                    <p>Cargando turnos...</p>
+                </div>
+            </main>
+            
+        </div>
     </div>
 
+    <!-- SOLAPA 2: Clientes e Historial -->
+    <div id="solapa-clientes" class="contenido-solapa">
+        <h2>👥 Búsqueda e Historial de Clientes</h2>
+        <p>Módulo en construcción...</p>
+    </div>
+
+    <!-- SOLAPA 3: Nuevo Turno Avanzado (Con calendario y horario) -->
+    <div id="solapa-nuevo-turno" class="contenido-solapa">
+        <h2>➕ Reservar Turno Completo</h2>
+        <p>Módulo en construcción...</p>
+    </div>
+
+    <!-- SOLAPA 4: Próximos 7 días (Con confirmación de WhatsApp) -->
+    <div id="solapa-proximos" class="contenido-solapa">
+        <h2>📆 Turnos de los próximos 7 días</h2>
+        <p>Módulo en construcción...</p>
+    </div>
+
+    <!-- SOLAPA 5: Pañol Completo (Para cargar más productos) -->
+    <div id="solapa-productos" class="contenido-solapa">
+        <h2>📦 Gestión de Productos del Pañol</h2>
+        <p>Módulo en construcción...</p>
+    </div>
+
+    <!-- SOLAPA 6: Caja Mensual -->
+    <div id="solapa-caja-mes" class="contenido-solapa">
+        <h2>💰 Liquidación de Caja y Comisiones del Mes</h2>
+        <p>Módulo en construcción...</p>
+    </div>
+
+    <!-- Archivo del motor lógico (Siempre va al final) -->
     <script src="app.js"></script>
 </body>
 </html>
