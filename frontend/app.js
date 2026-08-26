@@ -309,6 +309,20 @@ clienteDb
   })
   .subscribe();
 
+// --- LÓGICA DEL MENÚ DE SOLAPAS ---
+function abrirSolapa(idSolapa, evento) {
+    // 1. Ocultamos todos los contenidos
+    const contenidos = document.querySelectorAll('.contenido-solapa');
+    contenidos.forEach(div => div.classList.remove('activa'));
+    
+    // 2. Apagamos todos los botones
+    const botones = document.querySelectorAll('.btn-solapa');
+    botones.forEach(btn => btn.classList.remove('activo'));
+    
+    // 3. Encendemos la solapa seleccionada y su botón
+    document.getElementById(idSolapa).classList.add('activa');
+    evento.currentTarget.classList.add('activo');
+}
 // --- NO OLVIDES AGREGAR ESTO A TUS LÍNEAS DE INICIO ---
 // Busca la parte final de tu código donde dice cargarTurnos() y cargarInventario() 
 // y agrega esto:
