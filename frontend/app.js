@@ -19,6 +19,108 @@ async function cargarTurnos() {
 
     renderizarTurnos(turnos);
 }
+// --- NUEVO: MÓDULO DE CLIENTES ---
+
+// 1. Guardar un nuevo cliente
+async function guardarCliente() {
+    const nombre = document.getElementById('nuevo-cliente-nombre').value.trim();
+    const apellido = document.getElementById('nuevo-cliente-apellido').value.trim();
+    const telefono = document.getElementById('nuevo-cliente-telefono').value.trim();
+    const mensaje = document.getElementById('mensaje-cliente');
+
+    if (!nombre) {
+        alert("El nombre es obligatorio para crear un cliente.");
+        return;
+    }
+
+    // Insertamos los datos en Supabase
+    const { error } = await clienteDb
+        .from('clientes')
+        .insert([{ nombre: nombre, apellido: apellido, telefono: telefono }]);
+
+    if (error) {
+        console.error("Error al guardar cliente:", error);
+        mensaje.style.color = 'red';
+        mensaje.innerText = "Error al guardar el cliente. Revisa los permisos.";
+    } else {
+        mensaje.style.color = '#27ae60';
+        mensaje.innerText = "¡Cliente guardado con éxito!";
+        
+        // Limpiamos las cajitas para el próximo
+        document.getElementById('nuevo-cliente-nombre').value = '';
+        document.getElementById('nuevo-cliente-apellido').value = '';
+        document.getElementById('nuevo-cliente-telefono').value = '';
+        
+        // Borramos el mensaje verde después de 3 segundos
+        setTimeout(() => { mensaje.innerText = ''; }, 3000);
+    }
+}
+
+// 2. Buscar Cliente e Historial
+async function buscarCliente() {
+    const termino = document.getElementById('buscador-cliente').value.trim();
+    const contenedor = document.getElementById('resultado-busqueda');
+
+    if (!termino) {
+        contenedor.innerHTML = '<p>Por favor, ingresa un nombre para buscar.</p>';
+        return;
+    }
+
+    contenedor.innerHTML = '<p>Buscando en la base de datos...</p>';
+
+    // Buscamos clientes que coincidan parcialmente con el nombre o apellido (.ilike)
+    const { data: clientes, error } = await clienteDb
+        .from('clientes')
+        .select('*')
+        .or(`nombre.ilike.%${termino}%,apellido.ilike.%${termino}%`)
+        .limit(5); // Traemos hasta 5 coincidencias
+
+    if (error) {
+        console.error("Error al buscar cliente:", error);
+        contenedor.innerHTML = '<p style="color:red;">Error de conexión con la base de datos.</p>';
+        return;
+    }
+
+    if (clientes.length === 0) {
+        contenedor.innerHTML = '<p>No se encontraron clientes con ese nombre.</p>';
+        return;
+    }
+
+    // Si encontramos clientes, armamos su ficha HTML
+    let html = '';
+    for (const cliente of clientes) {
+        // Pedimos los turnos que tuvo este cliente específico
+        const { data: turnos } = await clienteDb
+            .from('turnos')
+            .select('*, peluqueros(nombre)')
+            .eq('cliente_id', cliente.id)
+            .order('fecha_hora_inicio', { ascending: false });
+
+        html += `
+            <div style="background: #f9f9f9; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ddd;">
+                <h4 style="margin-top:0; color:#2c3e50; font-size:18px;">👤 ${cliente.nombre} ${cliente.apellido || ''}</h4>
+                <p style="margin: 5px 0;"><strong>Teléfono:</strong> ${cliente.telefono || 'Sin registrar'}</p>
+                
+                <h5 style="margin-bottom: 5px; margin-top: 15px;">📅 Historial de Turnos:</h5>
+        `;
+
+        if (!turnos || turnos.length === 0) {
+            html += `<p style="font-size:13px; color:#7f8c8d;">No tiene turnos registrados aún.</p>`;
+        } else {
+            html += `<ul style="font-size:14px; padding-left: 20px; margin-top:5px; color:#444;">`;
+            for (const turno of turnos) {
+                // Formateamos la fecha para que se lea lindo
+                const fecha = new Date(turno.fecha_hora_inicio).toLocaleDateString('es-AR');
+                const estado = turno.estado === 'finalizado' ? '✅ Finalizado' : `⏳ ${turno.estado}`;
+                html += `<li style="margin-bottom: 5px;"><strong>${fecha}</strong> | Atendió: ${turno.peluqueros?.nombre || 'Sin asignar'} | ${estado}</li>`;
+            }
+            html += `</ul>`;
+        }
+        html += `</div>`;
+    }
+
+    contenedor.innerHTML = html;
+}
 
 // 1. Modificamos cómo se dibuja la tarjeta
 function renderizarTurnos(turnos) {
