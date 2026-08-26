@@ -307,6 +307,58 @@ body {
     border-color: #3498db;
     outline: none;
 }
+
+/* --- Estilos para Próximos Turnos (Solapa 4) --- */
+.grilla-proximos {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+.turno-proximo-card {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 5px solid #3498db; /* Una línea de color para que resalte */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between; /* Separa la info del botón */
+    align-items: center;
+}
+.turno-proximo-info {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 15px;
+}
+/* Diseño del botón de WhatsApp */
+.btn-whatsapp {
+    background-color: #25D366; 
+    color: white;
+    text-decoration: none;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+}
+.btn-whatsapp:hover {
+    background-color: #128C7E;
+}
+
+/* Optimización para celulares */
+@media (max-width: 768px) {
+    .turno-proximo-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    .btn-whatsapp {
+        width: 100%;
+        justify-content: center;
+        box-sizing: border-box;
+    }
+}
 /* Sistema de Semáforo */
 .estado-programado { border-left-color: #95a5a6; } /* Gris */
 .estado-check-in { border-left-color: #f1c40f; }   /* Amarillo */
