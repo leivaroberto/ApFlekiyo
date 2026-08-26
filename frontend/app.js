@@ -596,6 +596,106 @@ async function cargarProximosTurnos() {
 
     contenedor.innerHTML = html;
 }
+// --- NUEVO: MÓDULO DE PRODUCTOS / PAÑOL (SOLAPA 5) ---
+
+// 1. Crear un producto desde cero
+async function crearProductoNuevo() {
+    const nombre = document.getElementById('nuevo-producto-nombre').value.trim();
+    const stockStr = document.getElementById('nuevo-producto-stock').value.trim();
+    const mensaje = document.getElementById('mensaje-producto');
+
+    if (!nombre || !stockStr) {
+        alert("Por favor, completa el nombre y el stock inicial del producto.");
+        return;
+    }
+
+    const stock = parseInt(stockStr);
+
+    const { error } = await clienteDb
+        .from('insumos')
+        .insert([{ nombre: nombre, stock_gramos: stock }]);
+
+    if (error) {
+        console.error("Error al crear producto:", error);
+        mensaje.style.color = 'red';
+        mensaje.innerText = "Error al guardar en la base de datos.";
+    } else {
+        mensaje.style.color = '#27ae60';
+        mensaje.innerText = "¡Producto creado con éxito!";
+        
+        // Limpiamos los campos
+        document.getElementById('nuevo-producto-nombre').value = '';
+        document.getElementById('nuevo-producto-stock').value = '';
+        
+        setTimeout(() => { mensaje.innerText = ''; }, 3000);
+        
+        // Refrescamos las listas de ambas solapas
+        cargarProductosAdmin(); 
+    }
+}
+
+// 2. Mostrar la lista con opción de sumar stock
+async function cargarProductosAdmin() {
+    const contenedor = document.getElementById('lista-productos-admin');
+    
+    const { data: insumos, error } = await clienteDb
+        .from('insumos')
+        .select('*')
+        .order('nombre', { ascending: true });
+
+    if (error) {
+        contenedor.innerHTML = '<p style="color:red;">Error al cargar el inventario.</p>';
+        return;
+    }
+
+    if (insumos.length === 0) {
+        contenedor.innerHTML = '<p>No hay productos cargados en el sistema.</p>';
+        return;
+    }
+
+    let html = '';
+    insumos.forEach(insumo => {
+        html += `
+            <div class="producto-admin-card">
+                <div>
+                    <strong style="font-size: 16px; color: #2c3e50;">${insumo.nombre}</strong> <br>
+                    <span style="color: #7f8c8d; font-size: 14px;">Stock actual: <strong>${insumo.stock_gramos}</strong></span>
+                </div>
+                <div class="form-sumar-stock">
+                    <input type="number" id="sumar-stock-${insumo.id}" placeholder="+ Cantidad">
+                    <button onclick="sumarStock(${insumo.id}, ${insumo.stock_gramos})" class="btn-sumar">Ingresar Stock</button>
+                </div>
+            </div>
+        `;
+    });
+    contenedor.innerHTML = html;
+}
+
+// 3. Sumar stock a un producto que ya existe
+async function sumarStock(insumoId, stockActual) {
+    const inputSuma = document.getElementById(`sumar-stock-${insumoId}`);
+    const cantidadASumar = parseInt(inputSuma.value);
+
+    if (!cantidadASumar || cantidadASumar <= 0 || isNaN(cantidadASumar)) {
+        alert("Ingresa una cantidad válida mayor a 0 para sumar al stock.");
+        return;
+    }
+
+    const nuevoStock = stockActual + cantidadASumar;
+
+    const { error } = await clienteDb
+        .from('insumos')
+        .update({ stock_gramos: nuevoStock })
+        .eq('id', insumoId);
+
+    if (error) {
+        alert("Error al actualizar el stock. Revisa los permisos de Supabase.");
+        console.error(error);
+    } else {
+        inputSuma.value = ''; // Limpiamos la cajita
+        cargarProductosAdmin(); // Recargamos esta pantalla para ver el nuevo número
+    }
+}
 
 cargarClientesDropdown();
 cargarPeluquerosDropdown();
@@ -609,3 +709,4 @@ cargarInventario();
 // Iniciar la app al abrir la pantalla
 cargarTurnos();
 cargarProximosTurnos();
+cargarProductosAdmin();
