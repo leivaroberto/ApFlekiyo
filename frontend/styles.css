@@ -359,6 +359,64 @@ body {
         box-sizing: border-box;
     }
 }
+
+/* --- Estilos para Módulo Productos (Solapa 5) --- */
+.contenedor-productos {
+    display: flex;
+    gap: 20px;
+    margin-top: 15px;
+}
+.grilla-admin-productos {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+}
+.producto-admin-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f9f9f9;
+    padding: 10px 15px;
+    border-radius: 5px;
+    border: 1px solid #eee;
+}
+.form-sumar-stock {
+    display: flex;
+    gap: 5px;
+}
+.form-sumar-stock input {
+    width: 80px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.btn-sumar {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+@media (max-width: 768px) {
+    .contenedor-productos {
+        flex-direction: column;
+    }
+    .producto-admin-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    .form-sumar-stock {
+        width: 100%;
+    }
+    .form-sumar-stock input {
+        flex-grow: 1;
+    }
+}
 /* Sistema de Semáforo */
 .estado-programado { border-left-color: #95a5a6; } /* Gris */
 .estado-check-in { border-left-color: #f1c40f; }   /* Amarillo */
