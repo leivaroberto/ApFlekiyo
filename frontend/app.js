@@ -425,6 +425,101 @@ function abrirSolapa(idSolapa, evento) {
     document.getElementById(idSolapa).classList.add('activa');
     evento.currentTarget.classList.add('activo');
 }
+// --- NUEVO: MÓDULO DE RESERVA AVANZADA (SOLAPA 3) ---
+
+// 1. Cargar la lista de clientes en el desplegable
+async function cargarClientesDropdown() {
+    const select = document.getElementById('select-cliente-avanzado');
+    const { data: clientes, error } = await clienteDb
+        .from('clientes')
+        .select('*')
+        .order('nombre', { ascending: true });
+
+    if (error) {
+        console.error("Error al cargar clientes para el dropdown:", error);
+        select.innerHTML = '<option value="">Error al cargar clientes</option>';
+        return;
+    }
+
+    if (clientes.length === 0) {
+        select.innerHTML = '<option value="">No hay clientes guardados</option>';
+        return;
+    }
+
+    // Armamos las opciones
+    let html = '<option value="">-- Selecciona un cliente --</option>';
+    clientes.forEach(cliente => {
+        html += `<option value="${cliente.id}">${cliente.nombre} ${cliente.apellido || ''} - ${cliente.telefono || 'Sin tel.'}</option>`;
+    });
+    select.innerHTML = html;
+}
+
+// 2. Cargar la lista de peluqueros en el desplegable
+async function cargarPeluquerosDropdown() {
+    const select = document.getElementById('select-peluquero-avanzado');
+    const { data: peluqueros, error } = await clienteDb
+        .from('peluqueros')
+        .select('*')
+        .order('nombre', { ascending: true });
+
+    if (error || !peluqueros) {
+        console.error("Error al cargar peluqueros:", error);
+        return;
+    }
+
+    let html = '<option value="">-- Selecciona un profesional --</option>';
+    peluqueros.forEach(peluquero => {
+        html += `<option value="${peluquero.id}">${peluquero.nombre}</option>`;
+    });
+    select.innerHTML = html;
+}
+
+// 3. Guardar el nuevo turno con fecha específica
+async function agendarTurnoAvanzado() {
+    const clienteId = document.getElementById('select-cliente-avanzado').value;
+    const peluqueroId = document.getElementById('select-peluquero-avanzado').value;
+    const fechaHoraStr = document.getElementById('fecha-hora-turno').value;
+    const mensaje = document.getElementById('mensaje-reserva');
+
+    if (!clienteId || !peluqueroId || !fechaHoraStr) {
+        alert("Por favor, completa todos los campos (Cliente, Peluquero y Fecha).");
+        return;
+    }
+
+    // Procesar las fechas (Le sumamos 1 hora automáticamente para la duración)
+    const fechaInicio = new Date(fechaHoraStr);
+    const fechaFin = new Date(fechaInicio.getTime() + (60 * 60 * 1000));
+
+    const { error } = await clienteDb
+        .from('turnos')
+        .insert([{
+            cliente_id: clienteId,
+            peluquero_id: peluqueroId,
+            fecha_hora_inicio: fechaInicio.toISOString(),
+            fecha_hora_fin: fechaFin.toISOString(),
+            estado: 'programado'
+        }]);
+
+    if (error) {
+        console.error("Error al guardar turno avanzado:", error);
+        mensaje.style.color = 'red';
+        mensaje.innerText = "Error al guardar el turno. Revisa los permisos.";
+    } else {
+        mensaje.style.color = '#27ae60';
+        mensaje.innerText = "¡Turno agendado con éxito!";
+        
+        // Limpiamos el formulario
+        document.getElementById('select-cliente-avanzado').value = '';
+        document.getElementById('select-peluquero-avanzado').value = '';
+        document.getElementById('fecha-hora-turno').value = '';
+
+        // Borramos el mensaje verde a los 3 segundos
+        setTimeout(() => { mensaje.innerText = ''; }, 3000);
+        
+        // Refrescamos la grilla por si el turno agendado es para el día de hoy
+        cargarTurnos(); 
+    }
+}
 // --- NO OLVIDES AGREGAR ESTO A TUS LÍNEAS DE INICIO ---
 // Busca la parte final de tu código donde dice cargarTurnos() y cargarInventario() 
 // y agrega esto:
