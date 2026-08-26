@@ -520,6 +520,8 @@ async function agendarTurnoAvanzado() {
         cargarTurnos(); 
     }
 }
+cargarClientesDropdown();
+cargarPeluquerosDropdown();
 // --- NO OLVIDES AGREGAR ESTO A TUS LÍNEAS DE INICIO ---
 // Busca la parte final de tu código donde dice cargarTurnos() y cargarInventario() 
 // y agrega esto:
