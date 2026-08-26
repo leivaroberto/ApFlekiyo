@@ -520,6 +520,83 @@ async function agendarTurnoAvanzado() {
         cargarTurnos(); 
     }
 }
+// --- NUEVO: MÓDULO DE PRÓXIMOS 7 DÍAS (SOLAPA 4) ---
+
+async function cargarProximosTurnos() {
+    const contenedor = document.getElementById('lista-proximos-turnos');
+    contenedor.innerHTML = '<p>Buscando la agenda de la semana...</p>';
+
+    // 1. Calculamos las fechas exactas
+    const hoy = new Date();
+    const dentroDe7Dias = new Date();
+    dentroDe7Dias.setDate(hoy.getDate() + 7);
+
+    // 2. Buscamos en la base de datos cruzando Turnos + Clientes + Peluqueros
+    const { data: turnos, error } = await clienteDb
+        .from('turnos')
+        .select('*, clientes(nombre, apellido, telefono), peluqueros(nombre)')
+        .gte('fecha_hora_inicio', hoy.toISOString())
+        .lte('fecha_hora_inicio', dentroDe7Dias.toISOString())
+        .order('fecha_hora_inicio', { ascending: true });
+
+    if (error) {
+        console.error("Error al cargar próximos turnos:", error);
+        contenedor.innerHTML = '<p style="color:red;">Error al conectar con la base de datos.</p>';
+        return;
+    }
+
+    if (turnos.length === 0) {
+        contenedor.innerHTML = '<p>No hay turnos agendados para los próximos 7 días.</p>';
+        return;
+    }
+
+    // 3. Dibujamos las tarjetas
+    let html = '';
+    turnos.forEach(turno => {
+        // Le damos un formato lindo a la fecha (Ej: Jueves 27 de Agosto, 15:00 hs)
+        const fecha = new Date(turno.fecha_hora_inicio);
+        const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute:'2-digit' };
+        const fechaFormateada = fecha.toLocaleDateString('es-AR', opcionesFecha);
+
+        const cliente = turno.clientes;
+        const peluquero = turno.peluqueros?.nombre || 'Sin asignar';
+        
+        // 4. Lógica de WhatsApp
+        let linkWhatsapp = '#';
+        let textoBtn = 'Sin teléfono';
+        let estiloBtn = 'background-color: #ccc; cursor: not-allowed;'; // Gris si no hay número
+
+        if (cliente && cliente.telefono && cliente.telefono !== 'Sin asignar') {
+            // Limpiamos el número de espacios o guiones por si lo guardaron raro
+            const numeroLimpio = cliente.telefono.replace(/\D/g, ''); 
+            
+            if (numeroLimpio.length > 5) { // Verificamos que sea un número válido
+                const mensaje = `¡Hola ${cliente.nombre}! Te escribimos de la peluquería para recordarte tu turno del día ${fechaFormateada} con ${peluquero}. ¿Nos confirmas tu asistencia?`;
+                // Codificamos el mensaje para que los espacios y símbolos viajen bien por internet
+                linkWhatsapp = `https://wa.me/${numeroLimpio}?text=${encodeURIComponent(mensaje)}`;
+                textoBtn = '📱 Enviar WhatsApp';
+                estiloBtn = ''; // Le quita el gris y usa el verde que pusimos en CSS
+            }
+        }
+
+        html += `
+            <div class="turno-proximo-card">
+                <div class="turno-proximo-info">
+                    <strong style="text-transform: capitalize; color:#2c3e50; font-size:16px;">📅 ${fechaFormateada}</strong>
+                    <span>👤 Cliente: ${cliente ? cliente.nombre + ' ' + (cliente.apellido || '') : 'Desconocido'}</span>
+                    <span>✂️ Profesional: ${peluquero}</span>
+                    <span style="color:#7f8c8d; font-size:13px;">📌 Estado actual: ${turno.estado}</span>
+                </div>
+                <a href="${linkWhatsapp}" target="_blank" class="btn-whatsapp" style="${estiloBtn}">
+                    ${textoBtn}
+                </a>
+            </div>
+        `;
+    });
+
+    contenedor.innerHTML = html;
+}
+
 cargarClientesDropdown();
 cargarPeluquerosDropdown();
 // --- NO OLVIDES AGREGAR ESTO A TUS LÍNEAS DE INICIO ---
@@ -531,3 +608,4 @@ cargarCaja();
 cargarInventario();
 // Iniciar la app al abrir la pantalla
 cargarTurnos();
+cargarProximosTurnos();
