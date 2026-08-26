@@ -175,7 +175,29 @@
             </main>
         </div>
     </div>
+<!-- SOLAPA 6: Caja Mensual -->
+    <div id="solapa-caja-mes" class="contenido-solapa">
+        <h2>💰 Liquidación de Caja y Comisiones del Mes</h2>
+        <p>Resumen financiero automático desde el primer día del mes actual.</p>
+        
+        <button onclick="cargarCajaMensual()" class="btn-accion-buscar" style="margin-bottom: 20px;">🔄 Actualizar Números</button>
 
+        <div class="contenedor-finanzas">
+            <!-- Tarjeta de Ingresos Totales -->
+            <aside class="panel-finanzas total-ingresos">
+                <h3>Facturación Total (Mes)</h3>
+                <p id="total-mes-ingresos" class="numero-grande">$0</p>
+            </aside>
+
+            <!-- Tarjeta de Comisiones a Pagar -->
+            <main class="panel-finanzas detalle-comisiones">
+                <h3>✂️ Liquidación por Profesional</h3>
+                <div id="lista-comisiones-mes">
+                    <p>Calculando liquidaciones...</p>
+                </div>
+            </main>
+        </div>
+    </div>
     <!-- Archivo del motor lógico (Siempre va al final) -->
     <script src="app.js"></script>
 </body>
