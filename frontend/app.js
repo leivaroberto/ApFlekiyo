@@ -696,17 +696,72 @@ async function sumarStock(insumoId, stockActual) {
         cargarProductosAdmin(); // Recargamos esta pantalla para ver el nuevo número
     }
 }
+// --- NUEVO: MÓDULO FINANCIERO MENSUAL (SOLAPA 6) ---
 
+async function cargarCajaMensual() {
+    const contenedorComisiones = document.getElementById('lista-comisiones-mes');
+    const textoTotal = document.getElementById('total-mes-ingresos');
+    
+    // 1. Averiguamos cuál fue el primer día de este mes
+    const hoy = new Date();
+    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    // Lo convertimos a formato que Supabase entienda
+    const fechaFiltro = primerDiaMes.toISOString();
+
+    // 2. Traemos todos los cobros del mes
+    const { data: registros, error } = await clienteDb
+        .from('caja')
+        .select('monto_total, monto_comision, peluqueros(nombre)')
+        .gte('fecha_cobro', fechaFiltro);
+
+    if (error) {
+        console.error("Error al cargar caja mensual:", error);
+        contenedorComisiones.innerHTML = '<p style="color:red;">Error al conectar con la base de datos.</p>';
+        return;
+    }
+
+    if (registros.length === 0) {
+        textoTotal.innerText = '$0';
+        contenedorComisiones.innerHTML = '<p>No hay ingresos registrados en este mes aún.</p>';
+        return;
+    }
+
+    // 3. Calculamos totales y separamos por profesional
+    let facturacionTotal = 0;
+    const liquidacionPorPeluquero = {};
+
+    registros.forEach(reg => {
+        // Sumamos al pozo general
+        facturacionTotal += Number(reg.monto_total);
+        
+        // Sumamos a la "billetera" de cada peluquero
+        const nombre = reg.peluqueros?.nombre || 'Sin asignar';
+        if (!liquidacionPorPeluquero[nombre]) {
+            liquidacionPorPeluquero[nombre] = 0;
+        }
+        liquidacionPorPeluquero[nombre] += Number(reg.monto_comision);
+    });
+
+    // 4. Dibujamos los resultados en pantalla
+    textoTotal.innerText = `$${facturacionTotal.toLocaleString('es-AR')}`;
+
+    let htmlComisiones = '';
+    for (const [nombre, monto] of Object.entries(liquidacionPorPeluquero)) {
+        htmlComisiones += `
+            <div class="comision-mes-item">
+                <strong>👤 ${nombre}</strong>
+                <span style="color: #e67e22; font-weight: bold;">$${monto.toLocaleString('es-AR')}</span>
+            </div>
+        `;
+    }
+    
+    contenedorComisiones.innerHTML = htmlComisiones;
+}
 cargarClientesDropdown();
 cargarPeluquerosDropdown();
-// --- NO OLVIDES AGREGAR ESTO A TUS LÍNEAS DE INICIO ---
-// Busca la parte final de tu código donde dice cargarTurnos() y cargarInventario() 
-// y agrega esto:
 cargarCaja();
-// --- INICIO DE LA APP ---
-// Asegúrate de llamar a esta función al final de tu archivo para que arranque
 cargarInventario();
-// Iniciar la app al abrir la pantalla
 cargarTurnos();
 cargarProximosTurnos();
 cargarProductosAdmin();
+cargarCajaMensual();
