@@ -244,12 +244,17 @@ async function cambiarEstado(turnoId, nuevoEstado) {
 
 
 // Función preparada para el botón "Agendar Turno"
-// Función para crear un turno real en Supabase
+// Función para crear un turno real en Supabase (CORREGIDA)
 async function crearTurnoNuevo() {
-    const nombreCliente = document.getElementById('input-cliente').value;
+    const nombreCliente = document.getElementById('input-cliente').value.trim();
+    const peluqueroId = document.getElementById('select-peluquero').value;
 
     if(!nombreCliente) {
         alert("Por favor, ingresa el nombre del cliente.");
+        return;
+    }
+    if(!peluqueroId) {
+        alert("Por favor, selecciona un profesional de la lista.");
         return;
     }
 
@@ -266,19 +271,7 @@ async function crearTurnoNuevo() {
     }
     const nuevoClienteId = clienteData[0].id;
 
-    // 2. Buscamos al primer peluquero disponible en tu base de datos
-    const { data: peluqueros } = await clienteDb
-        .from('peluqueros')
-        .select('id')
-        .limit(1);
-    
-    if (!peluqueros || peluqueros.length === 0) {
-        alert("No hay peluqueros creados en la base de datos.");
-        return;
-    }
-    const peluqueroId = peluqueros[0].id;
-
-    // 3. Creamos el turno (Programado para el momento actual, duración 1 hora)
+    // 2. Creamos el turno (Programado para el momento actual, duración 1 hora)
     const fechaInicio = new Date();
     const fechaFin = new Date(fechaInicio.getTime() + (60 * 60 * 1000)); // Suma 1 hora
 
@@ -296,11 +289,9 @@ async function crearTurnoNuevo() {
         alert("Error al guardar el turno en el calendario.");
         console.error(errorTurno);
     } else {
-        // Limpiamos la cajita de texto para que quede lista para otro cliente
+        // Limpiamos las cajitas para el próximo turno
         document.getElementById('input-cliente').value = '';
-        
-        // ¡LA MAGIA!: No necesitamos decirle a la pantalla que se actualice.
-        // El sistema de "Tiempo Real" detectará esto y dibujará el turno solo.
+        document.getElementById('select-peluquero').value = '';
     }
 }
 
