@@ -439,14 +439,15 @@ function abrirSolapa(idSolapa, evento) {
     document.getElementById(idSolapa).classList.add('activa');
     evento.currentTarget.classList.add('activo');
 
-    // 4. EL TRUCO: Solo cargamos el calendario si entramos a su solapa y está visible
+    // 4. EL TRUCO: Retrasamos 150ms la carga para asegurar que la pestaña ya es 100% visible
     if (idSolapa === 'solapa-calendario') {
-        if (!calendarioGlobal) {
-            cargarCalendario(); // Lo dibuja por primera vez
-        } else {
-            // Si ya existía, forzamos que recalcule su tamaño
-            setTimeout(() => { calendarioGlobal.render(); }, 100);
-        }
+        setTimeout(() => {
+            if (!calendarioGlobal) {
+                cargarCalendario(); // Lo dibuja por primera vez
+            } else {
+                calendarioGlobal.render(); // Lo reacomoda si ya existía
+            }
+        }, 150);
     }
 }
 // --- NUEVO: MÓDULO DE RESERVA AVANZADA (SOLAPA 3) ---
