@@ -75,12 +75,22 @@
         <h2>👥 Gestión de Clientes</h2>
         
         <div class="contenedor-clientes">
-            <!-- Formulario para Nuevo Cliente -->
+           
+            <!-- Formulario para Nuevo Cliente (INTERFAZ MEJORADA) -->
             <aside class="panel-formulario">
                 <h3>➕ Cargar Nuevo Cliente</h3>
-                <input type="text" id="nuevo-cliente-nombre" placeholder="Nombre (Ej. María)">
-                <input type="text" id="nuevo-cliente-apellido" placeholder="Apellido (Ej. Gómez)">
-                <input type="text" id="nuevo-cliente-telefono" placeholder="Teléfono (Ej. 299-1234567)">
+                <div class="grupo-input">
+                    <label>Nombre:</label>
+                    <input type="text" id="nuevo-cliente-nombre" placeholder="Ej. María">
+                </div>
+                <div class="grupo-input">
+                    <label>Apellido:</label>
+                    <input type="text" id="nuevo-cliente-apellido" placeholder="Ej. Gómez">
+                </div>
+                <div class="grupo-input">
+                    <label>Teléfono:</label>
+                    <input type="text" id="nuevo-cliente-telefono" placeholder="Ej. 299-1234567">
+                </div>
                 <button onclick="guardarCliente()" class="btn-accion">Guardar Cliente</button>
                 <p id="mensaje-cliente" class="mensaje-exito"></p>
             </aside>
