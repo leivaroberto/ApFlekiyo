@@ -7,6 +7,10 @@
     <link rel="stylesheet" href="styles.css">
     <!-- Librería de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Librería de Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- NUEVO: Librería FullCalendar para la agenda tipo Google -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
 </head>
 <body>
     <header class="header">
@@ -20,6 +24,7 @@
         <button class="btn-solapa" onclick="abrirSolapa('solapa-clientes', event)">👥 Clientes</button>
         <button class="btn-solapa" onclick="abrirSolapa('solapa-nuevo-turno', event)">➕ Nuevo Turno</button>
         <button class="btn-solapa" onclick="abrirSolapa('solapa-proximos', event)">📆 Próximos 7 Días</button>
+        <button class="btn-solapa" onclick="abrirSolapa('solapa-calendario', event)">📅 Calendario</button>
         <button class="btn-solapa" onclick="abrirSolapa('solapa-productos', event)">📦 Productos</button>
         <button class="btn-solapa" onclick="abrirSolapa('solapa-caja-mes', event)">💰 Caja del Mes</button>
         <button class="btn-solapa" onclick="abrirSolapa('solapa-peluqueros', event)">✂️ Profesionales</button>
@@ -241,7 +246,17 @@
         </div>
     </div>
 
-
+<!-- SOLAPA 8: Calendario General -->
+    <div id="solapa-calendario" class="contenido-solapa">
+        <h2>📅 Agenda General</h2>
+        <p>Visualiza todos los turnos del mes o la semana.</p>
+        
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+            <!-- Aquí adentro FullCalendar dibujará la magia -->
+            <div id="calendario-full"></div>
+        </div>
+    </div>
+    
     <!-- Archivo del motor lógico (Siempre va al final) -->
     <script src="app.js"></script>
 </body>
