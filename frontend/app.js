@@ -6,19 +6,23 @@ const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2. Función para mostrar turnos en la pantalla
+// Mostrar turnos SOLO DE HOY EN ADELANTE
 async function cargarTurnos() {
-    // AHORA pedimos también los datos del cliente (nombre y apellido)
+    // Calculamos el inicio del día de hoy a las 00:00 hs
+    const inicioHoy = new Date();
+    inicioHoy.setHours(0, 0, 0, 0);
+
     const { data: turnos, error } = await clienteDb
         .from('turnos')
         .select('*, peluqueros(nombre, color_calendario), clientes(nombre, apellido)')
-        .order('fecha_hora_inicio', { ascending: true }); // Ordenamos por hora
+        .gte('fecha_hora_inicio', inicioHoy.toISOString()) // Filtro: Mayor o igual a hoy
+        .order('fecha_hora_inicio', { ascending: true });
 
     if (error) {
         console.error("Error al cargar turnos:", error);
         return;
     }
-
-    renderizarTurnos(turnos); 
+    renderizarTurnos(turnos);
 }
 // --- NUEVO: MÓDULO DE CLIENTES ---
 
@@ -129,7 +133,7 @@ function renderizarTurnos(turnos) {
     contenedor.innerHTML = ''; 
 
     if (turnos.length === 0) {
-        contenedor.innerHTML = '<p>No hay turnos programados.</p>';
+        contenedor.innerHTML = '<p>No hay turnos programados para hoy.</p>';
         return;
     }
 
@@ -137,25 +141,26 @@ function renderizarTurnos(turnos) {
         const div = document.createElement('div');
         div.className = `turno-card estado-${turno.estado}`;
         
-        // Formateamos la hora del turno
         const fecha = new Date(turno.fecha_hora_inicio);
         const horaFormateada = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
-
-        // Extraemos nombre y apellido (con salvavidas por si no existen)
         const nombreCliente = turno.clientes?.nombre || 'Desconocido';
         const apellidoCliente = turno.clientes?.apellido || '';
         
         div.innerHTML = `
-            <div>
-                <strong style="font-size: 16px; color: #2c3e50;">⏰ ${horaFormateada} | 👤 ${nombreCliente} ${apellidoCliente}</strong><br>
-                <div style="margin-top: 8px;">
-                    <select class="selector-estado" onchange="cambiarEstado('${turno.id}', this.value)">
-                        <option value="programado" ${turno.estado === 'programado' ? 'selected' : ''}>Programado (Gris)</option>
-                        <option value="check-in" ${turno.estado === 'check-in' ? 'selected' : ''}>Check-in (Amarillo)</option>
-                        <option value="en_proceso" ${turno.estado === 'en_proceso' ? 'selected' : ''}>En Proceso (Naranja)</option>
-                        <option value="finalizado" ${turno.estado === 'finalizado' ? 'selected' : ''}>Finalizado (Verde)</option>
-                    </select>
+            <div style="display: flex; justify-content: space-between; align-items: start; width: 100%;">
+                <div>
+                    <strong style="font-size: 16px; color: #2c3e50;">⏰ ${horaFormateada} | 👤 ${nombreCliente} ${apellidoCliente}</strong><br>
+                    <div style="margin-top: 8px;">
+                        <select class="selector-estado" onchange="cambiarEstado('${turno.id}', this.value)">
+                            <option value="programado" ${turno.estado === 'programado' ? 'selected' : ''}>Programado (Gris)</option>
+                            <option value="check-in" ${turno.estado === 'check-in' ? 'selected' : ''}>Check-in (Amarillo)</option>
+                            <option value="en_proceso" ${turno.estado === 'en_proceso' ? 'selected' : ''}>En Proceso (Naranja)</option>
+                            <option value="finalizado" ${turno.estado === 'finalizado' ? 'selected' : ''}>Finalizado (Verde)</option>
+                        </select>
+                    </div>
                 </div>
+                <!-- Botón de Borrar Turno -->
+                <button onclick="borrarTurno('${turno.id}')" style="background: transparent; border: none; font-size: 18px; cursor: pointer;" title="Borrar Turno">❌</button>
             </div>
             <div class="etiqueta-peluquero" style="background-color: ${turno.peluqueros?.color_calendario || '#ccc'};">
                 ${turno.peluqueros?.nombre || 'Sin asignar'}
@@ -163,6 +168,15 @@ function renderizarTurnos(turnos) {
         `;
         contenedor.appendChild(div);
     });
+}
+
+// Nueva función para borrar un turno
+async function borrarTurno(id) {
+    if(confirm("¿Estás seguro que deseas eliminar este turno?")) {
+        const { error } = await clienteDb.from('turnos').delete().eq('id', id);
+        if(error) alert("Error al borrar el turno.");
+        // Se borrará solo de la pantalla gracias al Tiempo Real
+    }
 }
 
 // 2. Nueva función para actualizar la base de datos, descontar stock Y registrar el pago
