@@ -210,22 +210,34 @@
         </div>
     </div>
 
-    <!-- SOLAPA 7: Peluqueros -->
+  <!-- SOLAPA 7: Peluqueros -->
     <div id="solapa-peluqueros" class="contenido-solapa">
         <h2>✂️ Gestión de Profesionales</h2>
         
         <div class="contenedor-productos">
+            
+            <!-- Formulario real para agregar peluqueros -->
             <aside class="panel-formulario">
-                <!-- ... (tu formulario) ... -->
+                <h3>➕ Cargar Peluquero/a</h3>
+                <div class="grupo-input">
+                    <label>Nombre:</label>
+                    <input type="text" id="nuevo-peluquero-nombre" placeholder="Ej. Carlos">
+                </div>
+                <div class="grupo-input">
+                    <label>Color para la agenda:</label>
+                    <input type="color" id="nuevo-peluquero-color" value="#3498db" style="width: 100%; height: 40px; padding: 0;">
+                </div>
+                <button onclick="guardarPeluquero()" class="btn-accion">Guardar Profesional</button>
+                <p id="mensaje-peluquero" class="mensaje-exito"></p>
             </aside>
 
             <main class="panel-buscador">
                 <h3>📋 Equipo de Trabajo</h3>
-                <!-- ESTA ES LA LÍNEA CRÍTICA QUE NO ENCUENTRA: -->
                 <div id="lista-peluqueros-admin" class="grilla-admin-productos">
                     <p>Cargando equipo...</p>
                 </div>
             </main>
+            
         </div>
     </div>
 
