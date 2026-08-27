@@ -438,6 +438,11 @@ function abrirSolapa(idSolapa, evento) {
     // 3. Encendemos la solapa seleccionada y su botón
     document.getElementById(idSolapa).classList.add('activa');
     evento.currentTarget.classList.add('activo');
+
+    // 4. TRUCO DEL CALENDARIO: Si abrimos la pestaña del calendario, lo forzamos a acomodarse
+    if (idSolapa === 'solapa-calendario' && calendarioGlobal) {
+        setTimeout(() => { calendarioGlobal.render(); }, 100);
+    }
 }
 // --- NUEVO: MÓDULO DE RESERVA AVANZADA (SOLAPA 3) ---
 
@@ -876,7 +881,68 @@ async function borrarPeluquero(id) {
         }
     }
 }
+// --- NUEVO: MÓDULO DE CALENDARIO GENERAL (SOLAPA 8) ---
+let calendarioGlobal = null; // Guardamos el calendario en una variable general
 
+async function cargarCalendario() {
+    const calendarEl = document.getElementById('calendario-full');
+    if (!calendarEl) return;
+
+    // 1. Buscamos TODOS los turnos en la base de datos
+    const { data: turnos, error } = await clienteDb
+        .from('turnos')
+        .select('*, clientes(nombre, apellido), peluqueros(nombre, color_calendario)');
+
+    if (error) {
+        console.error("Error al cargar turnos para el calendario:", error);
+        return;
+    }
+
+    // 2. Convertimos tus turnos al formato que necesita FullCalendar
+    const eventos = turnos.map(turno => {
+        const nombreCliente = turno.clientes?.nombre || 'Desconocido';
+        const nombrePeluquero = turno.peluqueros?.nombre || 'Sin asignar';
+        const color = turno.peluqueros?.color_calendario || '#3498db'; // Usa el color del peluquero
+
+        return {
+            id: turno.id,
+            title: `${nombreCliente} (${nombrePeluquero})`,
+            start: turno.fecha_hora_inicio,
+            end: turno.fecha_hora_fin,
+            backgroundColor: color,
+            borderColor: color
+        };
+    });
+
+    // 3. Destruimos el calendario viejo si existe (para no duplicarlos al actualizar)
+    if (calendarioGlobal) {
+        calendarioGlobal.destroy();
+    }
+
+    // 4. Creamos el Calendario Tipo Google
+    calendarioGlobal = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'timeGridWeek', // Vista por defecto (semanal con horarios)
+        locale: 'es', // Idioma español
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay' // Botones Mes/Semana/Día
+        },
+        buttonText: {
+            today: 'Hoy',
+            month: 'Mes',
+            week: 'Semana',
+            day: 'Día'
+        },
+        slotMinTime: '08:00:00', // Hora a la que abre la peluquería
+        slotMaxTime: '22:00:00', // Hora a la que cierra
+        allDaySlot: false, // Oculta la fila de "todo el día"
+        height: 650, // Altura en la pantalla
+        events: eventos // Le pasamos la lista de turnos convertida
+    });
+
+    calendarioGlobal.render();
+}
 
 cargarClientesDropdown();
 cargarPeluquerosDropdown();
@@ -887,3 +953,5 @@ cargarProximosTurnos();
 cargarProductosAdmin();
 cargarCajaMensual();
 cargarPeluquerosAdmin();
+cargarCalendario(); // ¡Nuevo!
+
