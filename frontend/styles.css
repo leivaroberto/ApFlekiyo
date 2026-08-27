@@ -466,6 +466,31 @@ body {
         box-sizing: border-box;
     }
 }
+/* --- Estilos Responsivos para Celulares (FullCalendar y Contenedores) --- */
+@media (max-width: 768px) {
+    /* Hacemos que el calendario no se desborde en pantallas chicas */
+    #calendario-full {
+        font-size: 12px; /* Achica un poco la letra para que entre en la pantalla del teléfono */
+    }
+    
+    /* Ajusta los botones superiores del calendario (Mes, Semana, Día) para que no se amontonen */
+    .fc .fc-toolbar {
+        flex-direction: column;
+        gap: 10px;
+        align-items: stretch;
+    }
+    
+    .fc .fc-toolbar-title {
+        font-size: 16px;
+        text-align: center;
+    }
+
+    /* Asegura que el contenedor de la solapa de calendario respete los márgenes del celular */
+    #solapa-calendario div {
+        padding: 10px !important;
+        box-sizing: border-box;
+    }
+}
 /* Sistema de Semáforo */
 .estado-programado { border-left-color: #95a5a6; } /* Gris */
 .estado-check-in { border-left-color: #f1c40f; }   /* Amarillo */
