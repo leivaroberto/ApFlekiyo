@@ -194,19 +194,24 @@ async function cambiarEstado(turnoId, nuevoEstado) {
     }
 
     // B. ¡LÓGICA DE STOCK Y CAJA!
+    // ... (El principio de cambiarEstado queda igual, busca la parte 'B. ¡LÓGICA DE STOCK Y CAJA!')
     if (nuevoEstado === 'finalizado') {
-        // 1. Preguntamos los insumos
-        const gramos = prompt("Turno finalizado. ¿Cuántos gramos de Tintura se usaron? (Si no usó, escribe 0)");
-        
-        // 2. Preguntamos el pago
+        const resena = prompt("Turno finalizado. Escribe una breve reseña del trabajo realizado (Ej. Mechas con gorro, decoloración suave):");
+        const gramos = prompt("¿Cuántos gramos de Tintura se usaron? (Si no usó, escribe 0)");
         const precio = prompt("¿Cuál fue el precio total cobrado al cliente? (Ej: 15000)");
 
-        if (gramos !== null && precio !== null) {
-            // ¡PEGA AQUÍ TU ENLACE DE RENDER! (Sin la barra / al final)
-            // Ej: 'https://appflekiyo-backend-xyz1.onrender.com'
+        if (gramos !== null && precio !== null && resena !== null) {
             const RENDER_URL = 'https://apflekiyo.onrender.com'; 
-
+            
             try {
+                // 1. Guardamos la reseña en el turno directamente
+                await clienteDb.from('turnos').update({ resena: resena }).eq('id', turnoId);
+
+                // 2. Ejecutamos tu pago y stock en Render
+       
+            try {
+                // 1. Guardamos la reseña en el turno directamente
+                await clienteDb.from('turnos').update({ resena: resena }).eq('id', turnoId);
                 // Averiguamos qué peluquero atendió este turno para darle su comisión
                 const { data: turnoInfo } = await clienteDb
                     .from('turnos')
