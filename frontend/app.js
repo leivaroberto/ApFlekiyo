@@ -439,9 +439,14 @@ function abrirSolapa(idSolapa, evento) {
     document.getElementById(idSolapa).classList.add('activa');
     evento.currentTarget.classList.add('activo');
 
-    // 4. TRUCO DEL CALENDARIO: Si abrimos la pestaña del calendario, lo forzamos a acomodarse
-    if (idSolapa === 'solapa-calendario' && calendarioGlobal) {
-        setTimeout(() => { calendarioGlobal.render(); }, 100);
+    // 4. EL TRUCO: Solo cargamos el calendario si entramos a su solapa y está visible
+    if (idSolapa === 'solapa-calendario') {
+        if (!calendarioGlobal) {
+            cargarCalendario(); // Lo dibuja por primera vez
+        } else {
+            // Si ya existía, forzamos que recalcule su tamaño
+            setTimeout(() => { calendarioGlobal.render(); }, 100);
+        }
     }
 }
 // --- NUEVO: MÓDULO DE RESERVA AVANZADA (SOLAPA 3) ---
@@ -953,5 +958,5 @@ cargarProximosTurnos();
 cargarProductosAdmin();
 cargarCajaMensual();
 cargarPeluquerosAdmin();
-cargarCalendario(); // ¡Nuevo!
+
 
