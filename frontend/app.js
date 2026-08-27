@@ -477,9 +477,11 @@ async function cargarClientesDropdown() {
     select.innerHTML = html;
 }
 
-// 2. Cargar la lista de peluqueros en el desplegable
+// 2. Cargar la lista de peluqueros en LOS desplegables (Rápido y Avanzado)
 async function cargarPeluquerosDropdown() {
-    const select = document.getElementById('select-peluquero-avanzado');
+    const selectAvanzado = document.getElementById('select-peluquero-avanzado');
+    const selectRapido = document.getElementById('select-peluquero'); // Agregamos el selector rápido
+
     const { data: peluqueros, error } = await clienteDb
         .from('peluqueros')
         .select('*')
@@ -494,7 +496,10 @@ async function cargarPeluquerosDropdown() {
     peluqueros.forEach(peluquero => {
         html += `<option value="${peluquero.id}">${peluquero.nombre}</option>`;
     });
-    select.innerHTML = html;
+    
+    // Inyectamos la lista en ambas solapas
+    if (selectAvanzado) selectAvanzado.innerHTML = html;
+    if (selectRapido) selectRapido.innerHTML = html;
 }
 
 // 3. Guardar el nuevo turno con fecha específica
