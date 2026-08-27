@@ -196,8 +196,7 @@ async function cambiarEstado(turnoId, nuevoEstado) {
         return; 
     }
 
-    // B. ¡LÓGICA DE STOCK Y CAJA!
-    // ... (El principio de cambiarEstado queda igual, busca la parte 'B. ¡LÓGICA DE STOCK Y CAJA!')
+    // B. ¡LÓGICA DE STOCK, CAJA Y RESEÑA!
     if (nuevoEstado === 'finalizado') {
         const resena = prompt("Turno finalizado. Escribe una breve reseña del trabajo realizado (Ej. Mechas con gorro, decoloración suave):");
         const gramos = prompt("¿Cuántos gramos de Tintura se usaron? (Si no usó, escribe 0)");
@@ -209,20 +208,15 @@ async function cambiarEstado(turnoId, nuevoEstado) {
             try {
                 // 1. Guardamos la reseña en el turno directamente
                 await clienteDb.from('turnos').update({ resena: resena }).eq('id', turnoId);
-
-                // 2. Ejecutamos tu pago y stock en Render
-       
-            try {
-                // 1. Guardamos la reseña en el turno directamente
-                await clienteDb.from('turnos').update({ resena: resena }).eq('id', turnoId);
-                // Averiguamos qué peluquero atendió este turno para darle su comisión
+                
+                // 2. Averiguamos qué peluquero atendió este turno para darle su comisión
                 const { data: turnoInfo } = await clienteDb
                     .from('turnos')
                     .select('peluquero_id')
                     .eq('id', turnoId)
                     .single();
 
-                // Le enviamos TODO el paquete de datos a tu servidor en Render
+                // 3. Le enviamos TODO el paquete de datos a tu servidor en Render
                 const respuesta = await fetch(`${RENDER_URL}/api/finalizar-turno`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -230,14 +224,12 @@ async function cambiarEstado(turnoId, nuevoEstado) {
                         turnoId: turnoId,
                         peluqueroId: turnoInfo.peluquero_id,
                         insumoId: 1, 
-                        gramosUsados: parseInt(gramos) || 0, // Convierte texto a número
-                        precioTotal: parseFloat(precio) || 0 // Convierte texto a precio
+                        gramosUsados: parseInt(gramos) || 0,
+                        precioTotal: parseFloat(precio) || 0
                     })
                 });
 
                 const resultado = await respuesta.json();
-                
-                // Render nos avisa si todo salió bien
                 alert(resultado.mensaje || "Hubo un problema: " + resultado.error);
                 
             } catch (errorRender) {
@@ -832,7 +824,7 @@ async function cargarPeluquerosAdmin() {
         html += `
             <div class="producto-admin-card" style="border-left: 6px solid ${p.color_calendario}; display: flex; justify-content: space-between;">
                 <strong style="font-size: 18px;">${p.nombre}</strong>
-                <button onclick="borrarPeluquero(${p.id})" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Borrar</button>
+                <button onclick="borrarPeluquero('${p.id}')" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Borrar</button>
             </div>
         `;
     });
