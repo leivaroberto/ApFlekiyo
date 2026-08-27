@@ -766,6 +766,61 @@ async function cargarCajaMensual() {
     
     contenedorComisiones.innerHTML = htmlComisiones;
 }
+
+// --- NUEVO: MÓDULO DE PROFESIONALES ---
+
+async function guardarPeluquero() {
+    const nombre = document.getElementById('nuevo-peluquero-nombre').value.trim();
+    const color = document.getElementById('nuevo-peluquero-color').value;
+    const mensaje = document.getElementById('mensaje-peluquero');
+
+    if (!nombre) {
+        alert("El nombre es obligatorio.");
+        return;
+    }
+
+    const { error } = await clienteDb
+        .from('peluqueros')
+        .insert([{ nombre: nombre, color_calendario: color }]);
+
+    if (error) {
+        mensaje.style.color = 'red';
+        mensaje.innerText = "Error al guardar el profesional.";
+        console.error(error);
+    } else {
+        mensaje.style.color = '#27ae60';
+        mensaje.innerText = "¡Profesional guardado!";
+        document.getElementById('nuevo-peluquero-nombre').value = '';
+        setTimeout(() => { mensaje.innerText = ''; }, 3000);
+        
+        // Recargamos las listas
+        cargarPeluquerosAdmin();
+        cargarPeluquerosDropdown(); // Del agendador avanzado
+    }
+}
+
+async function cargarPeluquerosAdmin() {
+    const contenedor = document.getElementById('lista-peluqueros-admin');
+    const { data: peluqueros, error } = await clienteDb
+        .from('peluqueros')
+        .select('*')
+        .order('nombre', { ascending: true });
+
+    if (error) {
+        contenedor.innerHTML = '<p style="color:red;">Error al cargar.</p>';
+        return;
+    }
+    
+    let html = '';
+    peluqueros.forEach(p => {
+        html += `
+            <div class="producto-admin-card" style="border-left: 6px solid ${p.color_calendario}">
+                <strong style="font-size: 18px;">${p.nombre}</strong>
+            </div>
+        `;
+    });
+    contenedor.innerHTML = html;
+}
 cargarClientesDropdown();
 cargarPeluquerosDropdown();
 cargarCaja();
@@ -774,3 +829,4 @@ cargarTurnos();
 cargarProximosTurnos();
 cargarProductosAdmin();
 cargarCajaMensual();
+cargarPeluquerosAdmin();
