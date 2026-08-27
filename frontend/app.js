@@ -653,7 +653,7 @@ async function crearProductoNuevo() {
     }
 }
 
-// 2. Mostrar la lista con opción de sumar stock
+// 2. Mostrar la lista con opción de sumar stock, editar y borrar
 async function cargarProductosAdmin() {
     const contenedor = document.getElementById('lista-productos-admin');
     
@@ -677,19 +677,56 @@ async function cargarProductosAdmin() {
         html += `
             <div class="producto-admin-card">
                 <div>
-                    <strong style="font-size: 16px; color: #2c3e50;">${insumo.nombre}</strong> <br>
+                    <strong style="font-size: 16px; color: #2c3e50;">${insumo.nombre}</strong> 
+                    <button onclick="editarProducto(${insumo.id}, '${insumo.nombre}')" style="background:transparent; border:none; cursor:pointer; font-size:16px;" title="Editar Nombre">✏️</button>
+                    <br>
                     <span style="color: #7f8c8d; font-size: 14px;">Stock actual: <strong>${insumo.stock_gramos}</strong></span>
                 </div>
-                <div class="form-sumar-stock">
-                    <input type="number" id="sumar-stock-${insumo.id}" placeholder="+ Cantidad">
-                    <button onclick="sumarStock(${insumo.id}, ${insumo.stock_gramos})" class="btn-sumar">Ingresar Stock</button>
+                <div class="form-sumar-stock" style="display:flex; align-items:center; gap: 5px;">
+                    <input type="number" id="sumar-stock-${insumo.id}" placeholder="+ Cant" style="width: 70px;">
+                    <button onclick="sumarStock(${insumo.id}, ${insumo.stock_gramos})" class="btn-sumar">Sumar</button>
+                    <button onclick="borrarProducto(${insumo.id})" style="background:transparent; border:none; font-size:18px; cursor:pointer; margin-left: 10px;" title="Borrar Producto">❌</button>
                 </div>
             </div>
         `;
     });
     contenedor.innerHTML = html;
 }
+// NUEVA: Función para editar el nombre de un producto
+async function editarProducto(id, nombreActual) {
+    const nuevoNombre = prompt("Modificar el nombre del producto:", nombreActual);
+    
+    if (nuevoNombre !== null && nuevoNombre.trim() !== "") {
+        const { error } = await clienteDb
+            .from('insumos')
+            .update({ nombre: nuevoNombre.trim() })
+            .eq('id', id);
 
+        if (error) {
+            alert("Error al modificar el producto.");
+            console.error(error);
+        } else {
+            cargarProductosAdmin(); // Refrescamos la lista para ver el cambio
+        }
+    }
+}
+
+// NUEVA: Función para borrar un producto
+async function borrarProducto(id) {
+    if (confirm("¿Estás seguro que deseas eliminar este producto del inventario?")) {
+        const { error } = await clienteDb
+            .from('insumos')
+            .delete()
+            .eq('id', id);
+
+        if (error) {
+            alert("Error al borrar el producto.");
+            console.error(error);
+        } else {
+            cargarProductosAdmin(); // Refrescamos la lista
+        }
+    }
+}
 // 3. Sumar stock a un producto que ya existe
 async function sumarStock(insumoId, stockActual) {
     const inputSuma = document.getElementById(`sumar-stock-${insumoId}`);
