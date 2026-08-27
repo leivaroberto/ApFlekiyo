@@ -117,7 +117,10 @@ async function buscarCliente() {
                 // Formateamos la fecha para que se lea lindo
                 const fecha = new Date(turno.fecha_hora_inicio).toLocaleDateString('es-AR');
                 const estado = turno.estado === 'finalizado' ? '✅ Finalizado' : `⏳ ${turno.estado}`;
-                html += `<li style="margin-bottom: 5px;"><strong>${fecha}</strong> | Atendió: ${turno.peluqueros?.nombre || 'Sin asignar'} | ${estado}</li>`;
+                html += `<li style="margin-bottom: 10px;">
+                            <strong>${fecha}</strong> | Atendió: ${turno.peluqueros?.nombre || 'Sin asignar'} | ${estado}
+                            ${turno.resena ? `<br><span style="color:#7f8c8d; font-size:13px;">📝 <i>${turno.resena}</i></span>` : ''}
+                         </li>`;
             }
             html += `</ul>`;
         }
