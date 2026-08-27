@@ -18,7 +18,7 @@ async function cargarTurnos() {
         return;
     }
 
-    renderizarTurnos(turnos);
+    renderizarTurnos(turnos); 
 }
 // --- NUEVO: MÓDULO DE CLIENTES ---
 
