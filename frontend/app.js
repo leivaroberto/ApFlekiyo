@@ -823,26 +823,36 @@ async function guardarPeluquero() {
 
 async function cargarPeluquerosAdmin() {
     const contenedor = document.getElementById('lista-peluqueros-admin');
-    const { data: peluqueros, error } = await clienteDb
-        .from('peluqueros')
-        .select('*')
-        .order('nombre', { ascending: true });
+    const { data: peluqueros, error } = await clienteDb.from('peluqueros').select('*').order('nombre', { ascending: true });
 
-    if (error) {
-        contenedor.innerHTML = '<p style="color:red;">Error al cargar.</p>';
-        return;
-    }
+    if (error) { return contenedor.innerHTML = '<p style="color:red;">Error al cargar.</p>'; }
     
     let html = '';
     peluqueros.forEach(p => {
         html += `
-            <div class="producto-admin-card" style="border-left: 6px solid ${p.color_calendario}">
+            <div class="producto-admin-card" style="border-left: 6px solid ${p.color_calendario}; display: flex; justify-content: space-between;">
                 <strong style="font-size: 18px;">${p.nombre}</strong>
+                <button onclick="borrarPeluquero(${p.id})" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Borrar</button>
             </div>
         `;
     });
     contenedor.innerHTML = html;
 }
+
+// Nueva función para borrar un profesional
+async function borrarPeluquero(id) {
+    if(confirm("¿Estás seguro que deseas eliminar a este profesional? Se mantendrá su registro en los turnos viejos, pero ya no podrá agendar nuevos.")) {
+        const { error } = await clienteDb.from('peluqueros').delete().eq('id', id);
+        if(error) {
+            alert("Error: No puedes borrar un profesional que tiene turnos asignados.");
+        } else {
+            cargarPeluquerosAdmin(); // Recarga la lista visual
+            cargarPeluquerosDropdown(); // Recarga el desplegable de reservas
+        }
+    }
+}
+
+
 cargarClientesDropdown();
 cargarPeluquerosDropdown();
 cargarCaja();
