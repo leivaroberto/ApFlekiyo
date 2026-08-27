@@ -32,12 +32,12 @@
             <!-- Columna Izquierda: Controles y Resúmenes rápidos -->
             <div class="columna-izquierda">
                 
-                <aside class="panel-control">
+               <aside class="panel-control">
                     <h3>Agendar Turno Rápido</h3>
                     <input type="text" id="input-cliente" placeholder="Nombre del Cliente (Ej. María)">
+                    <!-- Selector corregido -->
                     <select id="select-peluquero">
-                        <option value="1">Peluquero 1</option>
-                        <option value="2">Peluquero 2</option>
+                        <option value="">Cargando peluqueros...</option>
                     </select>
                     <button onclick="crearTurnoNuevo()" class="btn-agendar">Guardar Turno</button>
                 </aside>
