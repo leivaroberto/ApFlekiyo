@@ -7,10 +7,11 @@ const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2. Función para mostrar turnos en la pantalla
 async function cargarTurnos() {
-    // Le pedimos a Supabase que "una" la tabla turnos con la tabla peluqueros
+    // AHORA pedimos también los datos del cliente (nombre y apellido)
     const { data: turnos, error } = await clienteDb
         .from('turnos')
-        .select('*, peluqueros(nombre, color_calendario)');
+        .select('*, peluqueros(nombre, color_calendario), clientes(nombre, apellido)')
+        .order('fecha_hora_inicio', { ascending: true }); // Ordenamos por hora
 
     if (error) {
         console.error("Error al cargar turnos:", error);
@@ -136,18 +137,26 @@ function renderizarTurnos(turnos) {
         const div = document.createElement('div');
         div.className = `turno-card estado-${turno.estado}`;
         
-        // Agregamos un menú desplegable para cambiar el estado
+        // Formateamos la hora del turno
+        const fecha = new Date(turno.fecha_hora_inicio);
+        const horaFormateada = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+        // Extraemos nombre y apellido (con salvavidas por si no existen)
+        const nombreCliente = turno.clientes?.nombre || 'Desconocido';
+        const apellidoCliente = turno.clientes?.apellido || '';
+        
         div.innerHTML = `
             <div>
-                <strong>Turno:</strong> ${turno.id.substring(0, 5)}<br>
-                <select class="selector-estado" onchange="cambiarEstado('${turno.id}', this.value)">
-                    <option value="programado" ${turno.estado === 'programado' ? 'selected' : ''}>Programado (Gris)</option>
-                    <option value="check-in" ${turno.estado === 'check-in' ? 'selected' : ''}>Check-in (Amarillo)</option>
-                    <option value="en_proceso" ${turno.estado === 'en_proceso' ? 'selected' : ''}>En Proceso (Naranja)</option>
-                    <option value="finalizado" ${turno.estado === 'finalizado' ? 'selected' : ''}>Finalizado (Verde)</option>
-                </select>
+                <strong style="font-size: 16px; color: #2c3e50;">⏰ ${horaFormateada} | 👤 ${nombreCliente} ${apellidoCliente}</strong><br>
+                <div style="margin-top: 8px;">
+                    <select class="selector-estado" onchange="cambiarEstado('${turno.id}', this.value)">
+                        <option value="programado" ${turno.estado === 'programado' ? 'selected' : ''}>Programado (Gris)</option>
+                        <option value="check-in" ${turno.estado === 'check-in' ? 'selected' : ''}>Check-in (Amarillo)</option>
+                        <option value="en_proceso" ${turno.estado === 'en_proceso' ? 'selected' : ''}>En Proceso (Naranja)</option>
+                        <option value="finalizado" ${turno.estado === 'finalizado' ? 'selected' : ''}>Finalizado (Verde)</option>
+                    </select>
+                </div>
             </div>
-            <!-- Aplicamos el nombre y el color real con salvavidas (?.) -->
             <div class="etiqueta-peluquero" style="background-color: ${turno.peluqueros?.color_calendario || '#ccc'};">
                 ${turno.peluqueros?.nombre || 'Sin asignar'}
             </div>
