@@ -1041,8 +1041,8 @@ async function generarReportePDF() {
 
         cuerpoTabla.push([
             fechaFormateada,
-            'Registrado en Caja', // Dato genérico por falta de conexión directa
-            'Servicio de Peluquería', // Dato genérico por falta de conexión directa
+            'Registrado en Caja', 
+            'Servicio de Peluquería', 
             `$${monto.toLocaleString('es-AR')}`,
             `$${comision.toLocaleString('es-AR')}`
         ]);
@@ -1069,67 +1069,8 @@ async function generarReportePDF() {
     // 8. Descargamos el archivo PDF
     doc.save(`Liquidacion_${peluqueroInfo.nombre.replace(/\s+/g, '_')}_${fechaDesdeStr}_al_${fechaHastaStr}.pdf`);
 }
-    // 4. Inicializamos jsPDF
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
 
-    // Encabezado del PDF
-    doc.setFontSize(18);
-    doc.setTextColor(44, 62, 80);
-    doc.text("VERONA Estilistas - Reporte de Liquidación", 14, 20);
-
-    doc.setFontSize(12);
-    doc.setTextColor(127, 140, 141);
-    doc.text(`Profesional: ${peluqueroInfo.nombre} (${peluqueroInfo.porcentaje_comision}% Comisión)`, 14, 28);
-    doc.text(`Período: ${fechaDesdeStr} al ${fechaHastaStr}`, 14, 34);
-
-    // 5. Preparamos los datos para la tabla
-    let cuerpoTabla = [];
-    let acumuladoTotalFacturado = 0;
-    let acumuladoTotalComision = 0;
-
-    registros.forEach(reg => {
-        const fechaFormateada = new Date(reg.fecha_cobro).toLocaleDateString('es-AR');
-        const clienteNombre = reg.turnos?.clientes ? `${reg.turnos.clientes.nombre} ${reg.turnos.clientes.apellido || ''}` : 'Cliente general';
-        const trabajo = reg.turnos?.descripcion_trabajo || 'Servicio de peluquería';
-        const monto = Number(reg.monto_total);
-        const comision = Number(reg.monto_comision);
-
-        acumuladoTotalFacturado += monto;
-        acumuladoTotalComision += comision;
-
-        cuerpoTabla.push([
-            fechaFormateada,
-            clienteNombre,
-            trabajo,
-            `$${monto.toLocaleString('es-AR')}`,
-            `$${comision.toLocaleString('es-AR')}`
-        ]);
-    });
-
-    // 6. Dibujamos la tabla utilizando la extensión autoTable
-    doc.autoTable({
-        startY: 42,
-        head: [['Fecha', 'Cliente', 'Trabajo Realizado', 'Precio Cobrado', 'Comisión']],
-        body: cuerpoTabla,
-        theme: 'striped',
-        headStyles: { fillColor: [44, 62, 80] },
-        styles: { fontSize: 10, cellPadding: 5 }
-    });
-
-    // 7. Agregamos el Total al final de la tabla
-    const finalY = doc.lastAutoTable.finalY + 10;
-    
-    doc.setFontSize(12);
-    doc.setTextColor(44, 62, 80);
-    doc.text(`Total Facturado: $${acumuladoTotalFacturado.toLocaleString('es-AR')}`, 14, finalY);
-    doc.text(`Total Comisión a Pagar: $${acumuladoTotalComision.toLocaleString('es-AR')}`, 14, finalY + 7);
-
-    // 8. Descargamos el archivo PDF automáticamente
-    doc.save(`Liquidacion_${peluqueroInfo.nombre.replace(/\s+/g, '_')}_${fechaDesdeStr}_al_${fechaHastaStr}.pdf`);
-}
-
-
+// --- LLAMADAS DE ARRANQUE ---
 cargarClientesDropdown();
 cargarPeluquerosDropdown();
 cargarCaja();
@@ -1139,5 +1080,3 @@ cargarProximosTurnos();
 cargarProductosAdmin();
 cargarCajaMensual();
 cargarPeluquerosAdmin();
-
-
