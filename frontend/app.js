@@ -828,21 +828,28 @@ async function cargarCajaMensual() {
     contenedorComisiones.innerHTML = htmlComisiones;
 }
 
-// --- NUEVO: MÓDULO DE PROFESIONALES ---
+// --- MÓDULO DE PROFESIONALES ACTUALIZADO ---
 
 async function guardarPeluquero() {
     const nombre = document.getElementById('nuevo-peluquero-nombre').value.trim();
+    const comisionStr = document.getElementById('nuevo-peluquero-comision').value.trim();
     const color = document.getElementById('nuevo-peluquero-color').value;
     const mensaje = document.getElementById('mensaje-peluquero');
 
-    if (!nombre) {
-        alert("El nombre es obligatorio.");
+    if (!nombre || !comisionStr) {
+        alert("El nombre y el porcentaje de comisión son obligatorios.");
         return;
     }
 
+    const porcentajeComision = parseFloat(comisionStr);
+
     const { error } = await clienteDb
         .from('peluqueros')
-        .insert([{ nombre: nombre, color_calendario: color }]);
+        .insert([{ 
+            nombre: nombre, 
+            porcentaje_comision: porcentajeComision, 
+            color_calendario: color 
+        }]);
 
     if (error) {
         mensaje.style.color = 'red';
@@ -852,11 +859,11 @@ async function guardarPeluquero() {
         mensaje.style.color = '#27ae60';
         mensaje.innerText = "¡Profesional guardado!";
         document.getElementById('nuevo-peluquero-nombre').value = '';
+        document.getElementById('nuevo-peluquero-comision').value = '50';
         setTimeout(() => { mensaje.innerText = ''; }, 3000);
         
-        // Recargamos las listas
         cargarPeluquerosAdmin();
-        cargarPeluquerosDropdown(); // Del agendador avanzado
+        cargarPeluquerosDropdown();
     }
 }
 
@@ -868,9 +875,13 @@ async function cargarPeluquerosAdmin() {
     
     let html = '';
     peluqueros.forEach(p => {
+        const comisionVal = p.porcentaje_comision !== undefined ? p.porcentaje_comision : 50;
         html += `
-            <div class="producto-admin-card" style="border-left: 6px solid ${p.color_calendario}; display: flex; justify-content: space-between;">
-                <strong style="font-size: 18px;">${p.nombre}</strong>
+            <div class="producto-admin-card" style="border-left: 6px solid ${p.color_calendario}; display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <strong style="font-size: 18px; color: #2c3e50;">${p.nombre}</strong><br>
+                    <span style="color: #7f8c8d; font-size: 14px;">Comisión: <strong>${comisionVal}%</strong></span>
+                </div>
                 <button onclick="borrarPeluquero('${p.id}')" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Borrar</button>
             </div>
         `;
