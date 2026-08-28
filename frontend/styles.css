@@ -491,6 +491,31 @@ body {
         box-sizing: border-box;
     }
 }
+
+/* --- Corrección visual y adaptabilidad de FullCalendar --- */
+#calendario-full {
+    max-width: 100%;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+/* Ajustes específicos para que se vea bien en celulares */
+@media (max-width: 768px) {
+    .fc .fc-toolbar {
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+    }
+    .fc .fc-toolbar-title {
+        font-size: 18px;
+    }
+    .fc .fc-button {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+}
 /* Sistema de Semáforo */
 .estado-programado { border-left-color: #95a5a6; } /* Gris */
 .estado-check-in { border-left-color: #f1c40f; }   /* Amarillo */
