@@ -482,7 +482,8 @@ async function cargarClientesDropdown() {
 // 2. Cargar la lista de peluqueros en LOS desplegables (Rápido y Avanzado)
 async function cargarPeluquerosDropdown() {
     const selectAvanzado = document.getElementById('select-peluquero-avanzado');
-    const selectRapido = document.getElementById('select-peluquero'); // Agregamos el selector rápido
+    const selectRapido = document.getElementById('select-peluquero');
+    const selectReporte = document.getElementById('select-peluquero-reporte'); // <-- Nuevo
 
     const { data: peluqueros, error } = await clienteDb
         .from('peluqueros')
@@ -499,10 +500,11 @@ async function cargarPeluquerosDropdown() {
         html += `<option value="${peluquero.id}">${peluquero.nombre}</option>`;
     });
     
-    // Inyectamos la lista en ambas solapas
     if (selectAvanzado) selectAvanzado.innerHTML = html;
     if (selectRapido) selectRapido.innerHTML = html;
+    if (selectReporte) selectReporte.innerHTML = html; // <-- Nuevo
 }
+
 
 // 3. Guardar el nuevo turno con fecha específica, trabajo y duración real
 async function agendarTurnoAvanzado() {
@@ -962,6 +964,118 @@ async function cargarCalendario() {
     });
 
     calendarioGlobal.render();
+}
+
+// --- NUEVO: MÓDULO DE REPORTE PDF POR PELUQUERO Y FECHAS ---
+
+async function generarReportePDF() {
+    const peluqueroId = document.getElementById('select-peluquero-reporte').value;
+    const fechaDesdeStr = document.getElementById('fecha-desde').value;
+    const fechaHastaStr = document.getElementById('fecha-hasta').value;
+
+    if (!peluqueroId || !fechaDesdeStr || !fechaHastaStr) {
+        alert("Por favor, selecciona un profesional y define el rango de fechas (Desde y Hasta).");
+        return;
+    }
+
+    // 1. Buscamos el nombre y comisión del peluquero seleccionado
+    const { data: peluqueroInfo } = await clienteDb
+        .from('peluqueros')
+        .select('nombre, porcentaje_comision')
+        .eq('id', peluqueroId)
+        .single();
+
+    // 2. Definimos los límites de fechas (Desde las 00:00 del inicio hasta las 23:59 del fin)
+    const fechaInicio = new Date(fechaDesdeStr + 'T00:00:00');
+    const fechaFin = new Date(fechaHastaStr + 'T23:59:59');
+
+    // 3. Consultamos los turnos finalizados o registros de caja asociados en ese rango
+    // Buscamos directamente en la tabla 'caja' que ya tiene el monto total y la comisión calculada, unida con 'turnos' y 'clientes'
+    const { data: registros, error } = await clienteDb
+        .from('caja')
+        .select(`
+            monto_total, 
+            monto_comision, 
+            fecha_cobro,
+            turnos (
+                descripcion_trabajo,
+                clientes (nombre, apellido)
+            )
+        `)
+        .eq('peluquero_id', peluqueroId)
+        .gte('fecha_cobro', fechaInicio.toISOString())
+        .lte('fecha_cobro', fechaFin.toISOString())
+        .order('fecha_cobro', { ascending: true });
+
+    if (error) {
+        console.error("Error al generar reporte:", error);
+        alert("Ocurrió un error al buscar los datos en la base de datos.");
+        return;
+    }
+
+    if (!registros || registros.length === 0) {
+        alert("No se encontraron trabajos registrados para este profesional en el rango de fechas seleccionado.");
+        return;
+    }
+
+    // 4. Inicializamos jsPDF
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Encabezado del PDF
+    doc.setFontSize(18);
+    doc.setTextColor(44, 62, 80);
+    doc.text("VERONA Estilistas - Reporte de Liquidación", 14, 20);
+
+    doc.setFontSize(12);
+    doc.setTextColor(127, 140, 141);
+    doc.text(`Profesional: ${peluqueroInfo.nombre} (${peluqueroInfo.porcentaje_comision}% Comisión)`, 14, 28);
+    doc.text(`Período: ${fechaDesdeStr} al ${fechaHastaStr}`, 14, 34);
+
+    // 5. Preparamos los datos para la tabla
+    let cuerpoTabla = [];
+    let acumuladoTotalFacturado = 0;
+    let acumuladoTotalComision = 0;
+
+    registros.forEach(reg => {
+        const fechaFormateada = new Date(reg.fecha_cobro).toLocaleDateString('es-AR');
+        const clienteNombre = reg.turnos?.clientes ? `${reg.turnos.clientes.nombre} ${reg.turnos.clientes.apellido || ''}` : 'Cliente general';
+        const trabajo = reg.turnos?.descripcion_trabajo || 'Servicio de peluquería';
+        const monto = Number(reg.monto_total);
+        const comision = Number(reg.monto_comision);
+
+        acumuladoTotalFacturado += monto;
+        acumuladoTotalComision += comision;
+
+        cuerpoTabla.push([
+            fechaFormateada,
+            clienteNombre,
+            trabajo,
+            `$${monto.toLocaleString('es-AR')}`,
+            `$${comision.toLocaleString('es-AR')}`
+        ]);
+    });
+
+    // 6. Dibujamos la tabla utilizando la extensión autoTable
+    doc.autoTable({
+        startY: 42,
+        head: [['Fecha', 'Cliente', 'Trabajo Realizado', 'Precio Cobrado', 'Comisión']],
+        body: cuerpoTabla,
+        theme: 'striped',
+        headStyles: { fillColor: [44, 62, 80] },
+        styles: { fontSize: 10, cellPadding: 5 }
+    });
+
+    // 7. Agregamos el Total al final de la tabla
+    const finalY = doc.lastAutoTable.finalY + 10;
+    
+    doc.setFontSize(12);
+    doc.setTextColor(44, 62, 80);
+    doc.text(`Total Facturado: $${acumuladoTotalFacturado.toLocaleString('es-AR')}`, 14, finalY);
+    doc.text(`Total Comisión a Pagar: $${acumuladoTotalComision.toLocaleString('es-AR')}`, 14, finalY + 7);
+
+    // 8. Descargamos el archivo PDF automáticamente
+    doc.save(`Liquidacion_${peluqueroInfo.nombre.replace(/\s+/g, '_')}_${fechaDesdeStr}_al_${fechaHastaStr}.pdf`);
 }
 
 cargarClientesDropdown();
