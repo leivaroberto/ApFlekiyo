@@ -1078,6 +1078,7 @@ async function generarReportePDF() {
     doc.save(`Liquidacion_${peluqueroInfo.nombre.replace(/\s+/g, '_')}_${fechaDesdeStr}_al_${fechaHastaStr}.pdf`);
 }
 
+
 cargarClientesDropdown();
 cargarPeluquerosDropdown();
 cargarCaja();
