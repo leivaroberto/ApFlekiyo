@@ -11,6 +11,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- NUEVO: Librería FullCalendar para la agenda tipo Google -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    <!-- Librerías para exportar a PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
     <header class="header">
@@ -232,11 +235,11 @@
 
 <!-- SOLAPA 7: Peluqueros -->
     <div id="solapa-peluqueros" class="contenido-solapa">
-        <h2>✂️ Gestión de Profesionales</h2>
+        <h2>✂️ Gestión de Profesionales y Reportes</h2>
         
         <div class="contenedor-productos">
             
-            <!-- Formulario real para agregar peluqueros con comisión -->
+            <!-- Formulario para agregar peluqueros -->
             <aside class="panel-formulario">
                 <h3>➕ Cargar Peluquero/a</h3>
                 <div class="grupo-input">
@@ -255,10 +258,36 @@
                 <p id="mensaje-peluquero" class="mensaje-exito"></p>
             </aside>
 
+            <!-- Lista de Equipo y Generador de Reportes PDF -->
             <main class="panel-buscador">
                 <h3>📋 Equipo de Trabajo</h3>
-                <div id="lista-peluqueros-admin" class="grilla-admin-productos">
+                <div id="lista-peluqueros-admin" class="grilla-admin-productos" style="margin-bottom: 30px;">
                     <p>Cargando equipo...</p>
+                </div>
+
+                <!-- NUEVO: Panel Generador de Reporte PDF por Fechas -->
+                <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+                    <h3 style="margin-top: 0; color: #2c3e50;">📄 Imprimir Reporte de Trabajos (PDF)</h3>
+                    
+                    <div class="grupo-input">
+                        <label>Seleccionar Profesional:</label>
+                        <select id="select-peluquero-reporte" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+                            <option value="">-- Selecciona un profesional --</option>
+                        </select>
+                    </div>
+
+                    <div style="display: flex; gap: 10px;">
+                        <div class="grupo-input" style="flex: 1;">
+                            <label>Desde la fecha:</label>
+                            <input type="date" id="fecha-desde" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+                        </div>
+                        <div class="grupo-input" style="flex: 1;">
+                            <label>Hasta la fecha:</label>
+                            <input type="date" id="fecha-hasta" style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+                        </div>
+                    </div>
+
+                    <button onclick="generarReportePDF()" class="btn-accion" style="background-color: #27ae60; margin-top: 10px;">📥 Descargar PDF con Trabajos y Comisiones</button>
                 </div>
             </main>
             
