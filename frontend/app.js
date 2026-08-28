@@ -915,7 +915,7 @@ async function cargarCalendario() {
 
         return {
             id: turno.id,
-            title: `${nombreCliente} (${nombrePeluquero})`,
+            title: `${nombreCliente} - ${turno.descripcion_trabajo || 'Turno'} (${nombrePeluquero})`,
             start: turno.fecha_hora_inicio,
             end: turno.fecha_hora_fin,
             backgroundColor: color,
