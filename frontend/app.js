@@ -504,27 +504,31 @@ async function cargarPeluquerosDropdown() {
     if (selectRapido) selectRapido.innerHTML = html;
 }
 
-// 3. Guardar el nuevo turno con fecha específica
+// 3. Guardar el nuevo turno con fecha específica, trabajo y duración real
 async function agendarTurnoAvanzado() {
     const clienteId = document.getElementById('select-cliente-avanzado').value;
     const peluqueroId = document.getElementById('select-peluquero-avanzado').value;
+    const trabajo = document.getElementById('input-trabajo').value.trim();
+    const duracionMinutos = parseInt(document.getElementById('select-duracion').value) || 60;
     const fechaHoraStr = document.getElementById('fecha-hora-turno').value;
     const mensaje = document.getElementById('mensaje-reserva');
 
-    if (!clienteId || !peluqueroId || !fechaHoraStr) {
-        alert("Por favor, completa todos los campos (Cliente, Peluquero y Fecha).");
+    if (!clienteId || !peluqueroId || !fechaHoraStr || !trabajo) {
+        alert("Por favor, completa todos los campos (Cliente, Peluquero, Trabajo y Fecha).");
         return;
     }
 
-    // Procesar las fechas (Le sumamos 1 hora automáticamente para la duración)
+    // 1. Procesar las fechas usando la duración real seleccionada (en lugar de sumar siempre 1 hora fija)
     const fechaInicio = new Date(fechaHoraStr);
-    const fechaFin = new Date(fechaInicio.getTime() + (60 * 60 * 1000));
+    const fechaFin = new Date(fechaInicio.getTime() + (duracionMinutos * 60 * 1000));
 
     const { error } = await clienteDb
         .from('turnos')
         .insert([{
             cliente_id: clienteId,
             peluquero_id: peluqueroId,
+            descripcion_trabajo: trabajo,
+            duracion_minutos: duracionMinutos,
             fecha_hora_inicio: fechaInicio.toISOString(),
             fecha_hora_fin: fechaFin.toISOString(),
             estado: 'programado'
@@ -541,12 +545,11 @@ async function agendarTurnoAvanzado() {
         // Limpiamos el formulario
         document.getElementById('select-cliente-avanzado').value = '';
         document.getElementById('select-peluquero-avanzado').value = '';
+        document.getElementById('input-trabajo').value = '';
         document.getElementById('fecha-hora-turno').value = '';
 
-        // Borramos el mensaje verde a los 3 segundos
         setTimeout(() => { mensaje.innerText = ''; }, 3000);
         
-        // Refrescamos la grilla por si el turno agendado es para el día de hoy
         cargarTurnos(); 
     }
 }
