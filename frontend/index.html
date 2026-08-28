@@ -115,10 +115,10 @@
             </main>
         </div>
     </div>
-<!-- SOLAPA 3: Nuevo Turno Avanzado (Con calendario y horario) -->
+<!-- SOLAPA 3: Nuevo Turno Avanzado (Con calendario, trabajo y duración) -->
     <div id="solapa-nuevo-turno" class="contenido-solapa">
         <h2>➕ Reservar Turno Completo</h2>
-        <p>Selecciona un cliente, su profesional y la fecha exacta del turno.</p>
+        <p>Selecciona el cliente, el profesional, el trabajo, la duración y la fecha exacta.</p>
         
         <div class="panel-formulario-avanzado">
             
@@ -137,8 +137,23 @@
             </div>
 
             <div class="grupo-input">
-                <label>📆 Fecha y Hora del Turno:</label>
-                <!-- Input especial que abre el calendario y reloj del celular/PC -->
+                <label>📝 Trabajo a realizar:</label>
+                <input type="text" id="input-trabajo" placeholder="Ej. Corte y Balayage">
+            </div>
+
+            <div class="grupo-input">
+                <label>⏱️ Duración estimada:</label>
+                <select id="select-duracion">
+                    <option value="30">30 minutos</option>
+                    <option value="60" selected>1 hora (60 min)</option>
+                    <option value="90">1 hora y media (90 min)</option>
+                    <option value="120">2 horas (120 min)</option>
+                    <option value="180">3 horas (180 min)</option>
+                </select>
+            </div>
+
+            <div class="grupo-input">
+                <label>📆 Fecha y Hora de Inicio:</label>
                 <input type="datetime-local" id="fecha-hora-turno">
             </div>
 
