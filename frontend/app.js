@@ -1,3 +1,4 @@
+let turnosDelDiaGlobal = []; // Variable global para guardar los turnos y que la alarma los lea
 // 1. Configuración de Supabase (Reemplaza con tus datos reales)
 const SUPABASE_URL = 'https://xpufmicxmbhpqocrwgdz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwdWZtaWN4bWJocHFvY3J3Z2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MzE1OTcsImV4cCI6MjEwMzEwNzU5N30.811oNtrlBbEvNvhxaLlvJBZtqSpU98ZQ9sORRh4EIu8';
@@ -22,6 +23,8 @@ async function cargarTurnos() {
         console.error("Error al cargar turnos:", error);
         return;
     }
+    // Guardamos los turnos en memoria para que la alarma pueda revisarlos
+    turnosDelDiaGlobal = turnos; 
     renderizarTurnos(turnos);
 }
 // --- NUEVO: MÓDULO DE CLIENTES ---
@@ -1069,7 +1072,74 @@ async function generarReportePDF() {
     // 8. Descargamos el archivo PDF
     doc.save(`Liquidacion_${peluqueroInfo.nombre.replace(/\s+/g, '_')}_${fechaDesdeStr}_al_${fechaHastaStr}.pdf`);
 }
+// --- NUEVO: SISTEMA DE ALARMAS Y NOTIFICACIONES ---
+let temporizadorAlarmas;
+let turnosYaNotificados = new Set(); // Para no repetir el aviso del mismo turno
 
+function activarAlarmas() {
+    // 1. Pedimos permiso al navegador/celular para enviar notificaciones
+    if (!("Notification" in window)) {
+        alert("Tu dispositivo o navegador no soporta notificaciones web.");
+        return;
+    }
+
+    Notification.requestPermission().then(permission => {
+        if (permission === "granted") {
+            document.getElementById('estado-alarma').innerText = "Alarmas ACTIVAS 🟢";
+            document.getElementById('estado-alarma').style.color = "#27ae60";
+            
+            // 2. Iniciamos el monitoreo cada 1 minuto (60000 milisegundos)
+            if(temporizadorAlarmas) clearInterval(temporizadorAlarmas);
+            temporizadorAlarmas = setInterval(revisarTurnosProximos, 60000);
+            
+            // Hacemos una primera revisión inmediata
+            revisarTurnosProximos();
+            alert("¡Alarmas activadas! Asegúrate de no cerrar la pestaña de AppFlekiyo.");
+        } else {
+            document.getElementById('estado-alarma').innerText = "Permiso denegado 🔴";
+            document.getElementById('estado-alarma').style.color = "red";
+            alert("Debes dar permiso para recibir notificaciones. Revisa la configuración de tu navegador.");
+        }
+    });
+}
+
+function revisarTurnosProximos() {
+    if (!turnosDelDiaGlobal || turnosDelDiaGlobal.length === 0) return;
+
+    const minutosAnticipacion = parseInt(document.getElementById('minutos-alarma').value);
+    const ahora = new Date();
+
+    turnosDelDiaGlobal.forEach(turno => {
+        // Solo miramos los turnos programados (Gris) que aún no ocurren
+        if (turno.estado === 'programado') {
+            const fechaTurno = new Date(turno.fecha_hora_inicio);
+            
+            // Calculamos la diferencia de tiempo entre "Ahora" y la hora del turno
+            const diferenciaMilisegundos = fechaTurno - ahora;
+            const diferenciaMinutos = Math.floor(diferenciaMilisegundos / 1000 / 60);
+
+            // Si faltan exactamente o menos minutos que los que elegiste, y no avisamos antes
+            if (diferenciaMinutos > 0 && diferenciaMinutos <= minutosAnticipacion && !turnosYaNotificados.has(turno.id)) {
+                
+                // Preparamos los datos para la pantalla
+                const nombreCliente = turno.clientes?.nombre || 'Un cliente';
+                const nombrePeluquero = turno.peluqueros?.nombre || 'el salón';
+                const trabajo = turno.descripcion_trabajo || 'un servicio';
+                const horaStr = fechaTurno.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+                // ¡Lanzamos la notificación nativa en el celular/PC!
+                new Notification(`⏰ Turno en ${diferenciaMinutos} min`, {
+                    body: `${nombreCliente} tiene turno a las ${horaStr} con ${nombrePeluquero} para ${trabajo}.`,
+                    icon: "https://cdn-icons-png.flaticon.com/512/3237/3237472.png", // Ícono de calendario
+                    vibrate: [200, 100, 200] // Hace vibrar el celular
+                });
+
+                // Lo guardamos para que no suene cada 1 minuto por el mismo turno
+                turnosYaNotificados.add(turno.id); 
+            }
+        }
+    });
+}
 // --- LLAMADAS DE ARRANQUE ---
 cargarClientesDropdown();
 cargarPeluquerosDropdown();
