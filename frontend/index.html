@@ -57,6 +57,19 @@
                     </div>
                 </aside>
 
+                <aside class="panel-alarmas" style="margin-top: 20px; background: #fff; padding: 15px; border-radius: 8px; border-left: 5px solid #f1c40f; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
+                    <h3>🔔 Alarma de Turnos</h3>
+                    <label style="font-size: 14px; color: #2c3e50;">Avisarme antes:</label>
+                    <select id="minutos-alarma" style="width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; border-radius: 5px; border: 1px solid #ccc;">
+                        <option value="5">5 Minutos</option>
+                        <option value="10" selected>10 Minutos</option>
+                        <option value="15">15 Minutos</option>
+                        <option value="30">30 Minutos</option>
+                    </select>
+                    <button onclick="activarAlarmas()" class="btn-accion" style="background-color: #f39c12; width: 100%; padding: 10px; color: white; border: none; border-radius: 5px; font-weight: bold; cursor: pointer;">Activar Notificaciones</button>
+                    <p id="estado-alarma" style="font-size: 12px; color: #7f8c8d; margin-top: 8px; text-align: center;">Alarmas inactivas.</p>
+                </aside>
+                
                 <aside class="panel-caja" style="margin-top: 20px;">
                     <h3>💰 Caja de Hoy</h3>
                     <div id="resumen-caja">
