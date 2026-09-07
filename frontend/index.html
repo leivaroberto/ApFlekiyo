@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VERONA Estilistas - AppFlekiyo - Sistema de Gestión</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Librería de Supabase -->
+    
+    <!-- Librería de Supabase (Corregido: una sola vez) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- Librería de Supabase -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <!-- NUEVO: Librería FullCalendar para la agenda tipo Google -->
+    
+    <!-- Librería FullCalendar para la agenda tipo Google -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    
     <!-- Librerías para exportar a PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -33,17 +34,16 @@
         <button class="btn-solapa" onclick="abrirSolapa('solapa-peluqueros', event)">✂️ Profesionales</button>
     </nav>
 
-    <!-- SOLAPA 1: Turnos de Hoy (Tu tablero actual interactivo) -->
+    <!-- SOLAPA 1: Turnos de Hoy -->
     <div id="solapa-hoy" class="contenido-solapa activa">
         <div class="contenedor-principal">
             
             <!-- Columna Izquierda: Controles y Resúmenes rápidos -->
             <div class="columna-izquierda">
                 
-               <aside class="panel-control">
+                <aside class="panel-control">
                     <h3>Agendar Turno Rápido</h3>
                     <input type="text" id="input-cliente" placeholder="Nombre del Cliente (Ej. María)">
-                    <!-- Selector corregido -->
                     <select id="select-peluquero">
                         <option value="">Cargando peluqueros...</option>
                     </select>
@@ -91,13 +91,12 @@
     </div>
 
     <!-- SOLAPA 2: Clientes e Historial -->
-  
     <div id="solapa-clientes" class="contenido-solapa">
         <h2>👥 Gestión de Clientes</h2>
         
         <div class="contenedor-clientes">
-           
-            <!-- Formulario para Nuevo Cliente (INTERFAZ MEJORADA) -->
+            
+            <!-- Formulario para Nuevo Cliente -->
             <aside class="panel-formulario">
                 <h3>➕ Cargar Nuevo Cliente</h3>
                 <div class="grupo-input">
@@ -124,14 +123,14 @@
                     <button onclick="buscarCliente()" class="btn-accion-buscar">Buscar</button>
                 </div>
                 
-                <!-- Aquí dibujaremos la información y la tabla de historial con JavaScript -->
                 <div id="resultado-busqueda" class="resultado-historial">
                     <p>Ingresa un nombre para ver su historial de turnos y pagos.</p>
                 </div>
             </main>
         </div>
     </div>
-<!-- SOLAPA 3: Nuevo Turno Avanzado (Con calendario, trabajo y duración) -->
+
+    <!-- SOLAPA 3: Nuevo Turno Avanzado -->
     <div id="solapa-nuevo-turno" class="contenido-solapa">
         <h2>➕ Reservar Turno Completo</h2>
         <p>Selecciona el cliente, el profesional, el trabajo, la duración y la fecha exacta.</p>
@@ -179,12 +178,11 @@
         </div>
     </div>
     
-    <!-- SOLAPA 4: Próximos 7 días (Con confirmación de WhatsApp) -->
+    <!-- SOLAPA 4: Próximos 7 días -->
     <div id="solapa-proximos" class="contenido-solapa">
         <h2>📆 Turnos de los próximos 7 días</h2>
         <p>Revisa la agenda de la semana y envía recordatorios automáticos.</p>
         
-        <!-- Botón para forzar la recarga por si acaso -->
         <button onclick="cargarProximosTurnos()" class="btn-accion-buscar" style="margin-bottom: 15px;">🔄 Actualizar Lista</button>
         
         <div id="lista-proximos-turnos" class="grilla-proximos">
@@ -192,7 +190,7 @@
         </div>
     </div>
 
-   <!-- SOLAPA 5: Pañol Completo (Para cargar más productos) -->
+    <!-- SOLAPA 5: Pañol Completo -->
     <div id="solapa-productos" class="contenido-solapa">
         <h2>📦 Gestión de Productos del Pañol</h2>
         <p>Agrega nuevos insumos al inventario o suma stock a los productos existentes cuando recibas mercadería.</p>
@@ -222,7 +220,8 @@
             </main>
         </div>
     </div>
-<!-- SOLAPA 6: Caja Mensual -->
+
+    <!-- SOLAPA 6: Caja Mensual -->
     <div id="solapa-caja-mes" class="contenido-solapa">
         <h2>💰 Liquidación de Caja y Comisiones del Mes</h2>
         <p>Resumen financiero automático desde el primer día del mes actual.</p>
@@ -246,7 +245,7 @@
         </div>
     </div>
 
-<!-- SOLAPA 7: Peluqueros -->
+    <!-- SOLAPA 7: Peluqueros -->
     <div id="solapa-peluqueros" class="contenido-solapa">
         <h2>✂️ Gestión de Profesionales y Reportes</h2>
         
@@ -278,7 +277,7 @@
                     <p>Cargando equipo...</p>
                 </div>
 
-                <!-- NUEVO: Panel Generador de Reporte PDF por Fechas -->
+                <!-- Panel Generador de Reporte PDF por Fechas -->
                 <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
                     <h3 style="margin-top: 0; color: #2c3e50;">📄 Imprimir Reporte de Trabajos (PDF)</h3>
                     
@@ -307,13 +306,12 @@
         </div>
     </div>
 
-<!-- SOLAPA 8: Calendario General -->
+    <!-- SOLAPA 8: Calendario General -->
     <div id="solapa-calendario" class="contenido-solapa">
         <h2>📅 Agenda General</h2>
         <p>Visualiza todos los turnos del mes o la semana.</p>
         
         <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-            <!-- Aquí adentro FullCalendar dibujará la magia -->
             <div id="calendario-full"></div>
         </div>
     </div>
