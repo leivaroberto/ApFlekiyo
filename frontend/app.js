@@ -206,26 +206,78 @@ async function buscarCliente() {
     const termino = document.getElementById('buscador-cliente').value.trim();
     const contenedor = document.getElementById('resultado-busqueda');
 
-    if (!termino) return contenedor.innerHTML = '<p>Por favor, ingresa un nombre para buscar.</p>';
-    
+    if (!termino) {
+        contenedor.innerHTML = '<p>Por favor, ingresa un nombre para buscar.</p>';
+        return;
+    }
+
     contenedor.innerHTML = '<p>Buscando en la base de datos...</p>';
 
-    const { data: clientes, error } = await clienteDb
+    // 1. Buscamos los datos básicos del cliente (Nombre, Apellido, Teléfono)
+    const { data: clientes, error: errorClientes } = await clienteDb
         .from('clientes')
         .select('*')
         .or(`nombre.ilike.%${termino}%,apellido.ilike.%${termino}%`)
         .limit(5);
 
-    if (error) return contenedor.innerHTML = '<p style="color:red;">Error de conexión.</p>';
-    if (clientes.length === 0) return contenedor.innerHTML = '<p>No se encontraron clientes.</p>';
+    if (errorClientes) {
+        console.error("Error al buscar cliente:", errorClientes);
+        contenedor.innerHTML = '<p style="color:red;">Error de conexión con la base de datos.</p>';
+        return;
+    }
+
+    if (clientes.length === 0) {
+        contenedor.innerHTML = '<p>No se encontraron clientes con ese nombre.</p>';
+        return;
+    }
 
     let html = '';
-    clientes.forEach(cliente => {
-        html += `<div style="background:#f9f9f9; padding:15px; margin-bottom:10px; border-radius:5px; border: 1px solid #ddd;">
-                    <strong style="font-size:16px;">👤 ${cliente.nombre} ${cliente.apellido || ''}</strong><br>
-                    <span style="color:#7f8c8d;">📞 ${cliente.telefono || 'Sin registrar'}</span>
-                 </div>`;
-    });
+    
+    // 2. Usamos un bucle "for...of" para hacer una sub-consulta por cada cliente encontrado
+    for (const cliente of clientes) {
+        // Buscamos el historial de turnos de este cliente específico
+        const { data: turnos, error: errorTurnos } = await clienteDb
+            .from('turnos')
+            .select('*, peluqueros(nombre)')
+            .eq('cliente_id', cliente.id)
+            .order('fecha_hora_inicio', { ascending: false }); // Los más recientes primero
+
+        html += `<div style="background: #f9f9f9; padding: 15px; margin-bottom: 15px; border-radius: 8px; border: 1px solid #ddd;">
+                    <h4 style="margin-top:0; color:#2c3e50; font-size:18px;">👤 ${cliente.nombre} ${cliente.apellido || ''}</h4>
+                    <p style="margin: 5px 0;"><strong>Teléfono:</strong> ${cliente.telefono || 'Sin registrar'}</p>
+                    
+                    <h5 style="margin-bottom: 5px; margin-top: 15px; color:#d35400;">📅 Historial de Atención y Trabajos:</h5>`;
+
+        // Verificamos si tiene turnos en el historial
+        if (!turnos || turnos.length === 0) {
+            html += `<p style="font-size:13px; color:#7f8c8d;">No tiene trabajos ni turnos registrados aún.</p>`;
+        } else {
+            html += `<ul style="font-size:14px; padding-left: 0; margin-top:5px; color:#444; list-style-type: none;">`;
+            
+            // 3. Compilamos e imprimimos cada día de atención y el trabajo realizado
+            for (const turno of turnos) {
+                // Formateamos la fecha exacta del día de atención
+                const fechaObj = new Date(turno.fecha_hora_inicio);
+                const fecha = fechaObj.toLocaleDateString('es-AR');
+                const hora = fechaObj.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+                
+                // Obtenemos el trabajo realizado (o un genérico si no se especificó)
+                const trabajoRealizado = turno.descripcion_trabajo || 'Servicio de peluquería';
+                
+                // Ícono visual según el estado del turno
+                const estado = turno.estado === 'finalizado' ? '✅ Finalizado' : `⏳ ${turno.estado}`;
+                
+                html += `<li style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px dashed #ccc;">
+                            <strong style="color: #2c3e50;">🗓️ ${fecha} a las ${hora}hs</strong> | ${estado}<br>
+                            <span style="color: #2980b9;">✂️ Trabajo: <strong>${trabajoRealizado}</strong></span><br>
+                            <span style="font-size:13px; color:#7f8c8d;">Atendió: ${turno.peluqueros?.nombre || 'Sin asignar'}</span>
+                         </li>`;
+            }
+            html += `</ul>`;
+        }
+        html += `</div>`;
+    }
+
     contenedor.innerHTML = html;
 }
 
