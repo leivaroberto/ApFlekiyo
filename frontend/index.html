@@ -89,53 +89,51 @@
         </div>
     </div>
 
-    <!-- SOLAPA UNIFICADA: Reserva y Calendario -->
-    <div id="solapa-reserva" class="contenido-solapa">
-        <h2>📅 Central de Reservas</h2>
-        <p>Agenda nuevos turnos y visualiza la disponibilidad general del salón.</p>
-        
-        <div class="contenedor-reserva">
-            
-            <!-- Formulario de Reserva -->
-            <aside class="panel-formulario-avanzado">
-                <h3>➕ Nuevo Turno</h3>
-                <div class="grupo-input">
-                    <label>👤 Cliente:</label>
-                    <select id="select-cliente-avanzado"><option value="">Cargando clientes...</option></select>
-                </div>
-                <div class="grupo-input">
-                    <label>✂️ Peluquero:</label>
-                    <select id="select-peluquero-avanzado"><option value="">Cargando peluqueros...</option></select>
-                </div>
-                <div class="grupo-input">
-                    <label>📝 Trabajo a realizar:</label>
-                    <input type="text" id="input-trabajo" placeholder="Ej. Corte y Balayage">
-                </div>
-                <div class="grupo-input">
-                    <label>⏱️ Duración estimada:</label>
-                    <select id="select-duracion">
-                        <option value="30">30 minutos</option>
-                        <option value="60" selected>1 hora (60 min)</option>
-                        <option value="90">1 hora y media (90 min)</option>
-                        <option value="120">2 horas (120 min)</option>
-                        <option value="180">3 horas (180 min)</option>
-                    </select>
-                </div>
-                <div class="grupo-input">
-                    <label>📆 Fecha y Hora:</label>
-                    <input type="datetime-local" id="fecha-hora-turno">
-                </div>
-                <button onclick="agendarTurnoAvanzado()" class="btn-accion">Confirmar Reserva</button>
-                <p id="mensaje-reserva" class="mensaje-exito"></p>
-            </aside>
+   <!-- SOLAPA UNIFICADA: Reserva y Calendario -->
+<div id="solapa-reserva" class="contenido-solapa">
+    <h2>📅 Central de Reservas</h2>
+    <p>Agenda nuevos turnos y visualiza la disponibilidad general del salón.</p>
+    
+    <div class="contenedor-reserva">
+        <!-- Formulario de Reserva -->
+        <aside class="panel-formulario-avanzado">
+            <h3>➕ Nuevo Turno</h3>
+            <div class="grupo-input">
+                <label>👤 Cliente:</label>
+                <select id="select-cliente-avanzado"><option value="">Cargando clientes...</option></select>
+            </div>
+            <div class="grupo-input">
+                <label>✂️ Peluquero:</label>
+                <select id="select-peluquero-avanzado"><option value="">Cargando peluqueros...</option></select>
+            </div>
+            <div class="grupo-input">
+                <label>📝 Trabajo a realizar:</label>
+                <input type="text" id="input-trabajo" placeholder="Ej. Corte y Balayage">
+            </div>
+            <div class="grupo-input">
+                <label>⏱️ Duración estimada:</label>
+                <select id="select-duracion">
+                    <option value="30">30 minutos</option>
+                    <option value="60" selected>1 hora (60 min)</option>
+                    <option value="90">1 hora y media (90 min)</option>
+                    <option value="120">2 horas (120 min)</option>
+                    <option value="180">3 horas (180 min)</option>
+                </select>
+            </div>
+            <div class="grupo-input">
+                <label>📆 Fecha y Hora:</label>
+                <input type="datetime-local" id="fecha-hora-turno">
+            </div>
+            <button onclick="agendarTurnoAvanzado()" class="btn-accion">Confirmar Reserva</button>
+            <p id="mensaje-reserva" class="mensaje-exito"></p>
+        </aside>
 
-            <!-- Calendario Visual -->
-            <main class="calendario-wrapper">
-                <div id="calendario-full"></div>
-            </main>
-            
-        </div>
+        <!-- Calendario Visual -->
+        <main class="calendario-wrapper">
+            <div id="calendario-full"></div>
+        </main>
     </div>
+</div>
 
     <!-- SOLAPA 2: Clientes e Historial -->
     <div id="solapa-clientes" class="contenido-solapa">
