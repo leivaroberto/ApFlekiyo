@@ -115,10 +115,17 @@ function renderizarTurnos(turnos) {
         const nombreCliente = turno.clientes?.nombre || 'Desconocido';
         const apellidoCliente = turno.clientes?.apellido || '';
         
+        // Rescatamos el detalle del trabajo (si no escribieron nada, muestra un texto por defecto)
+        const trabajo = turno.descripcion_trabajo || 'Servicio de salón';
+        
         div.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: start; width: 100%;">
                 <div>
                     <strong style="font-size: 16px; color: #2c3e50;">⏰ ${horaFormateada} | 👤 ${nombreCliente} ${apellidoCliente}</strong><br>
+                    
+                    <!-- Aquí inyectamos el trabajo a realizar -->
+                    <span style="color: #e67e22; font-size: 14px; font-weight: 500; display: inline-block; margin-top: 4px;">📝 ${trabajo}</span><br>
+                    
                     <div style="margin-top: 8px;">
                         <select class="selector-estado" onchange="cambiarEstado('${turno.id}', this.value)">
                             <option value="programado" ${turno.estado === 'programado' ? 'selected' : ''}>Programado (Gris)</option>
@@ -128,6 +135,7 @@ function renderizarTurnos(turnos) {
                         </select>
                     </div>
                 </div>
+                <!-- Botón de Borrar Turno -->
                 <button onclick="borrarTurno('${turno.id}')" style="background: transparent; border: none; font-size: 18px; cursor: pointer;" title="Borrar Turno">❌</button>
             </div>
             <div class="etiqueta-peluquero" style="background-color: ${turno.peluqueros?.color_calendario || '#ccc'};">
