@@ -5,15 +5,14 @@ const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 let calendarioGlobal = null;
 
-// --- 2. LÓGICA DEL MENÚ DE SOLAPAS ---
 function abrirSolapa(idSolapa, evento) {
-    document.querySelectorAll('.contenido-solapa').forEach(d => d.classList.remove('activa'));
+    document.querySelectorAll('.contenido-solapa').forEach(d => d.classList.0?.remove('activa') || d.classList.remove('activa'));
     document.querySelectorAll('.btn-solapa').forEach(b => b.classList.remove('activo'));
     
     document.getElementById(idSolapa).classList.add('activa');
     if (evento) evento.currentTarget.classList.add('activo');
 
-    if (idSolapa === 'solapa-calendario') {
+    if (idSolapa === 'solapa-reserva' || idSolapa === 'solapa-calendario') {
         setTimeout(() => {
             if (!calendarioGlobal) {
                 cargarCalendario();
