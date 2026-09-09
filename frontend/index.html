@@ -25,11 +25,10 @@
     <!-- MENÚ DE PESTAÑAS (Navegación principal) -->
     <nav class="menu-solapas">
         <button class="btn-solapa activo" onclick="abrirSolapa('solapa-hoy', event)">📅 Turnos de Hoy</button>
+        <button class="btn-solapa" onclick="abrirSolapa('solapa-reserva', event)">📅 Reserva</button>
         <button class="btn-solapa" onclick="abrirSolapa('solapa-clientes', event)">👥 Clientes</button>
-        <button class="btn-solapa" onclick="abrirSolapa('solapa-nuevo-turno', event)">➕ Nuevo Turno</button>
         <button class="btn-solapa" onclick="abrirSolapa('solapa-proximos', event)">📆 Próximos 7 Días</button>
-        <button class="btn-solapa" onclick="abrirSolapa('solapa-calendario', event)">📅 Calendario</button>
-        <button class="btn-solapa" onclick="abrirSolapa('solapa-productos', event)">📦 Productos</button>
+        <button class="btn-solapa" onclick="abrirSolapa('solapa-productos', event)">📦 Gestión de productos en stock</button>
         <button class="btn-solapa" onclick="abrirSolapa('solapa-caja-mes', event)">💰 Caja del Mes</button>
         <button class="btn-solapa" onclick="abrirSolapa('solapa-peluqueros', event)">✂️ Profesionales</button>
     </nav>
@@ -90,6 +89,54 @@
         </div>
     </div>
 
+    <!-- SOLAPA UNIFICADA: Reserva y Calendario -->
+    <div id="solapa-reserva" class="contenido-solapa">
+        <h2>📅 Central de Reservas</h2>
+        <p>Agenda nuevos turnos y visualiza la disponibilidad general del salón.</p>
+        
+        <div class="contenedor-reserva">
+            
+            <!-- Formulario de Reserva -->
+            <aside class="panel-formulario-avanzado">
+                <h3>➕ Nuevo Turno</h3>
+                <div class="grupo-input">
+                    <label>👤 Cliente:</label>
+                    <select id="select-cliente-avanzado"><option value="">Cargando clientes...</option></select>
+                </div>
+                <div class="grupo-input">
+                    <label>✂️ Peluquero:</label>
+                    <select id="select-peluquero-avanzado"><option value="">Cargando peluqueros...</option></select>
+                </div>
+                <div class="grupo-input">
+                    <label>📝 Trabajo a realizar:</label>
+                    <input type="text" id="input-trabajo" placeholder="Ej. Corte y Balayage">
+                </div>
+                <div class="grupo-input">
+                    <label>⏱️ Duración estimada:</label>
+                    <select id="select-duracion">
+                        <option value="30">30 minutos</option>
+                        <option value="60" selected>1 hora (60 min)</option>
+                        <option value="90">1 hora y media (90 min)</option>
+                        <option value="120">2 horas (120 min)</option>
+                        <option value="180">3 horas (180 min)</option>
+                    </select>
+                </div>
+                <div class="grupo-input">
+                    <label>📆 Fecha y Hora:</label>
+                    <input type="datetime-local" id="fecha-hora-turno">
+                </div>
+                <button onclick="agendarTurnoAvanzado()" class="btn-accion">Confirmar Reserva</button>
+                <p id="mensaje-reserva" class="mensaje-exito"></p>
+            </aside>
+
+            <!-- Calendario Visual -->
+            <main class="calendario-wrapper">
+                <div id="calendario-full"></div>
+            </main>
+            
+        </div>
+    </div>
+
     <!-- SOLAPA 2: Clientes e Historial -->
     <div id="solapa-clientes" class="contenido-solapa">
         <h2>👥 Gestión de Clientes</h2>
@@ -130,54 +177,6 @@
         </div>
     </div>
 
-    <!-- SOLAPA 3: Nuevo Turno Avanzado -->
-    <div id="solapa-nuevo-turno" class="contenido-solapa">
-        <h2>➕ Reservar Turno Completo</h2>
-        <p>Selecciona el cliente, el profesional, el trabajo, la duración y la fecha exacta.</p>
-        
-        <div class="panel-formulario-avanzado">
-            
-            <div class="grupo-input">
-                <label>👤 Cliente:</label>
-                <select id="select-cliente-avanzado">
-                    <option value="">Cargando lista de clientes...</option>
-                </select>
-            </div>
-
-            <div class="grupo-input">
-                <label>✂️ Peluquero:</label>
-                <select id="select-peluquero-avanzado">
-                    <option value="">Cargando peluqueros...</option>
-                </select>
-            </div>
-
-            <div class="grupo-input">
-                <label>📝 Trabajo a realizar:</label>
-                <input type="text" id="input-trabajo" placeholder="Ej. Corte y Balayage">
-            </div>
-
-            <div class="grupo-input">
-                <label>⏱️ Duración estimada:</label>
-                <select id="select-duracion">
-                    <option value="30">30 minutos</option>
-                    <option value="60" selected>1 hora (60 min)</option>
-                    <option value="90">1 hora y media (90 min)</option>
-                    <option value="120">2 horas (120 min)</option>
-                    <option value="180">3 horas (180 min)</option>
-                </select>
-            </div>
-
-            <div class="grupo-input">
-                <label>📆 Fecha y Hora de Inicio:</label>
-                <input type="datetime-local" id="fecha-hora-turno">
-            </div>
-
-            <button onclick="agendarTurnoAvanzado()" class="btn-accion">Confirmar Reserva</button>
-            <p id="mensaje-reserva" class="mensaje-exito"></p>
-            
-        </div>
-    </div>
-    
     <!-- SOLAPA 4: Próximos 7 días -->
     <div id="solapa-proximos" class="contenido-solapa">
         <h2>📆 Turnos de los próximos 7 días</h2>
@@ -303,16 +302,6 @@
                 </div>
             </main>
             
-        </div>
-    </div>
-
-    <!-- SOLAPA 8: Calendario General -->
-    <div id="solapa-calendario" class="contenido-solapa">
-        <h2>📅 Agenda General</h2>
-        <p>Visualiza todos los turnos del mes o la semana.</p>
-        
-        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-            <div id="calendario-full"></div>
         </div>
     </div>
     
