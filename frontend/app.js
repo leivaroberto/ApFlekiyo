@@ -3,26 +3,23 @@ const SUPABASE_URL = 'https://xpufmicxmbhpqocrwgdz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwdWZtaWN4bWJocHFvY3J3Z2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MzE1OTcsImV4cCI6MjEwMzEwNzU5N30.811oNtrlBbEvNvhxaLlvJBZtqSpU98ZQ9sORRh4EIu8';
 const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-let calendarioGlobal = null; 
+let calendarioGlobal = null;
 
 // --- 2. LÓGICA DEL MENÚ DE SOLAPAS ---
 function abrirSolapa(idSolapa, evento) {
-    const contenidos = document.querySelectorAll('.contenido-solapa');
-    contenidos.forEach(div => div.classList.remove('activa'));
-    
-    const botones = document.querySelectorAll('.btn-solapa');
-    botones.forEach(btn => btn.classList.remove('activo'));
+    document.querySelectorAll('.contenido-solapa').forEach(d => d.classList.remove('activa'));
+    document.querySelectorAll('.btn-solapa').forEach(b => b.classList.remove('activo'));
     
     document.getElementById(idSolapa).classList.add('activa');
     if (evento) evento.currentTarget.classList.add('activo');
 
-    // Retraso de 150ms para asegurar que la pestaña del calendario sea visible[cite: 1]
+    // Retraso de 150ms para asegurar que la pestaña del calendario sea visible
     if (idSolapa === 'solapa-calendario') {
         setTimeout(() => {
             if (!calendarioGlobal) {
-                cargarCalendario(); 
+                cargarCalendario();
             } else {
-                calendarioGlobal.render(); 
+                calendarioGlobal.render();
             }
         }, 150);
     }
@@ -45,7 +42,7 @@ async function cargarCalendario() {
     const eventos = turnos.map(turno => {
         const nombreCliente = turno.clientes?.nombre || 'Desconocido';
         const nombrePeluquero = turno.peluqueros?.nombre || 'Sin asignar';
-        const color = turno.peluqueros?.color_calendario || '#3498db'; 
+        const color = turno.peluqueros?.color_calendario || '#3498db';
 
         return {
             id: turno.id,
@@ -88,7 +85,8 @@ async function cargarTurnos() {
     const { data: turnos, error } = await clienteDb
         .from('turnos')
         .select('*, clientes(nombre, apellido), peluqueros(nombre, color_calendario)')
-        .gte('fecha_hora_inicio', inicioDelDia.toISOString());
+        .gte('fecha_hora_inicio', inicioDelDia.toISOString())
+        .order('fecha_hora_inicio', { ascending: true });
 
     if (error) {
         console.error("Error al cargar turnos:", error);
@@ -114,16 +112,12 @@ function renderizarTurnos(turnos) {
         const horaFormateada = fecha.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
         const nombreCliente = turno.clientes?.nombre || 'Desconocido';
         const apellidoCliente = turno.clientes?.apellido || '';
-        
-        // Rescatamos el detalle del trabajo (si no escribieron nada, muestra un texto por defecto)
         const trabajo = turno.descripcion_trabajo || 'Servicio de salón';
         
         div.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: start; width: 100%;">
                 <div>
                     <strong style="font-size: 16px; color: #2c3e50;">⏰ ${horaFormateada} | 👤 ${nombreCliente} ${apellidoCliente}</strong><br>
-                    
-                    <!-- Aquí inyectamos el trabajo a realizar -->
                     <span style="color: #e67e22; font-size: 14px; font-weight: 500; display: inline-block; margin-top: 4px;">📝 ${trabajo}</span><br>
                     
                     <div style="margin-top: 8px;">
@@ -135,7 +129,6 @@ function renderizarTurnos(turnos) {
                         </select>
                     </div>
                 </div>
-                <!-- Botón de Borrar Turno -->
                 <button onclick="borrarTurno('${turno.id}')" style="background: transparent; border: none; font-size: 18px; cursor: pointer;" title="Borrar Turno">❌</button>
             </div>
             <div class="etiqueta-peluquero" style="background-color: ${turno.peluqueros?.color_calendario || '#ccc'};">
@@ -156,7 +149,32 @@ async function cambiarEstado(turnoId, nuevoEstado) {
     if (nuevoEstado === 'finalizado') {
         const resena = prompt("Turno finalizado. Escribe una breve reseña del trabajo realizado:");
         const gramos = prompt("¿Cuántos gramos de Tintura se usaron? (Si no usó, escribe 0)");
-        const precio = prompt("¿Cuál fue el precio total cobrado al cliente?");
+        const precio = prompt("¿Cuál fue el precio total cobrado al cliente? (Ej: 15000)");
+
+        if (gramos !== null && precio !== null && resena !== null) {
+            const RENDER_URL = 'https://apflekiyo.onrender.com';
+            try {
+                const { data: turnoInfo } = await clienteDb.from('turnos').select('peluquero_id').eq('id', turnoId).single();
+
+                const respuesta = await fetch(`${RENDER_URL}/api/finalizar-turno`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        turnoId: turnoId,
+                        peluqueroId: turnoInfo.peluquero_id,
+                        insumoId: 1, 
+                        gramosUsados: parseInt(gramos) || 0,
+                        precioTotal: parseFloat(precio) || 0
+                    })
+                });
+
+                const resultado = await respuesta.json();
+                alert(resultado.mensaje || "Hubo un problema: " + resultado.error);
+            } catch (errorRender) {
+                console.error("Error al conectar con Render:", errorRender);
+                alert("El turno finalizó, pero no pudimos conectar con el servidor para la caja.");
+            }
+        }
     }
 }
 
@@ -166,7 +184,58 @@ async function borrarTurno(id) {
     }
 }
 
-// --- 5. MÓDULO DE CAJA Y REPORTE PDF ---
+// --- 5. MÓDULO DE CLIENTES ---
+async function guardarCliente() {
+    const nombre = document.getElementById('nuevo-cliente-nombre').value.trim();
+    const apellido = document.getElementById('nuevo-cliente-apellido').value.trim();
+    const telefono = document.getElementById('nuevo-cliente-telefono').value.trim();
+    const mensaje = document.getElementById('mensaje-cliente');
+
+    if (!nombre) return alert("El nombre es obligatorio para crear un cliente.");
+
+    const { error } = await clienteDb.from('clientes').insert([{ nombre: nombre, apellido: apellido, telefono: telefono }]);
+
+    if (error) {
+        mensaje.style.color = 'red';
+        mensaje.innerText = "Error al guardar el cliente.";
+    } else {
+        mensaje.style.color = '#27ae60';
+        mensaje.innerText = "¡Cliente guardado con éxito!";
+        document.getElementById('nuevo-cliente-nombre').value = '';
+        document.getElementById('nuevo-cliente-apellido').value = '';
+        document.getElementById('nuevo-cliente-telefono').value = '';
+        setTimeout(() => { mensaje.innerText = ''; }, 3000);
+    }
+}
+
+async function buscarCliente() {
+    const termino = document.getElementById('buscador-cliente').value.trim();
+    const contenedor = document.getElementById('resultado-busqueda');
+
+    if (!termino) return contenedor.innerHTML = '<p>Por favor, ingresa un nombre para buscar.</p>';
+    
+    contenedor.innerHTML = '<p>Buscando en la base de datos...</p>';
+
+    const { data: clientes, error } = await clienteDb
+        .from('clientes')
+        .select('*')
+        .or(`nombre.ilike.%${termino}%,apellido.ilike.%${termino}%`)
+        .limit(5);
+
+    if (error) return contenedor.innerHTML = '<p style="color:red;">Error de conexión.</p>';
+    if (clientes.length === 0) return contenedor.innerHTML = '<p>No se encontraron clientes.</p>';
+
+    let html = '';
+    clientes.forEach(cliente => {
+        html += `<div style="background:#f9f9f9; padding:15px; margin-bottom:10px; border-radius:5px;">
+                    <strong>👤 ${cliente.nombre} ${cliente.apellido || ''}</strong><br>
+                    <span>📞 ${cliente.telefono || 'Sin registrar'}</span>
+                 </div>`;
+    });
+    contenedor.innerHTML = html;
+}
+
+// --- 6. MÓDULO DE CAJA Y REPORTE PDF ---
 async function cargarCaja() {
     const inicioDelDia = new Date();
     inicioDelDia.setHours(0, 0, 0, 0);
@@ -177,12 +246,12 @@ async function cargarCaja() {
         .gte('fecha_cobro', inicioDelDia.toISOString());
 
     if (error) return;
-    
+    renderizarCaja(registros);
+}
+
+function renderizarCaja(registros) {
     const contenedor = document.getElementById('resumen-caja');
-    if (!registros || registros.length === 0) {
-        contenedor.innerHTML = '<p>No hay ingresos aún hoy.</p>';
-        return;
-    }
+    if (!registros || registros.length === 0) return contenedor.innerHTML = '<p>No hay ingresos aún hoy.</p>';
 
     let totalCaja = 0;
     const comisiones = {};
@@ -201,6 +270,42 @@ async function cargarCaja() {
     contenedor.innerHTML = html;
 }
 
+async function cargarCajaMensual() {
+    const contenedorComisiones = document.getElementById('lista-comisiones-mes');
+    const textoTotal = document.getElementById('total-mes-ingresos');
+    const hoy = new Date();
+    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString();
+
+    const { data: registros, error } = await clienteDb
+        .from('caja')
+        .select('monto_total, monto_comision, peluqueros(nombre)')
+        .gte('fecha_cobro', primerDiaMes);
+
+    if (error) return contenedorComisiones.innerHTML = '<p style="color:red;">Error de conexión.</p>';
+
+    if (registros.length === 0) {
+        textoTotal.innerText = '$0';
+        return contenedorComisiones.innerHTML = '<p>No hay ingresos este mes.</p>';
+    }
+
+    let facturacionTotal = 0;
+    const liquidacion = {};
+
+    registros.forEach(reg => {
+        facturacionTotal += Number(reg.monto_total);
+        const nombre = reg.peluqueros?.nombre || 'Sin asignar';
+        if (!liquidacion[nombre]) liquidacion[nombre] = 0;
+        liquidacion[nombre] += Number(reg.monto_comision);
+    });
+
+    textoTotal.innerText = `$${facturacionTotal.toLocaleString('es-AR')}`;
+    let htmlComisiones = '';
+    for (const [nombre, monto] of Object.entries(liquidacion)) {
+        htmlComisiones += `<div class="comision-mes-item"><strong>👤 ${nombre}</strong><span style="color:#e67e22; font-weight:bold;">$${monto.toLocaleString('es-AR')}</span></div>`;
+    }
+    contenedorComisiones.innerHTML = htmlComisiones;
+}
+
 async function generarReportePDF() {
     const peluqueroId = document.getElementById('select-peluquero-reporte').value;
     const fechaDesdeStr = document.getElementById('fecha-desde').value;
@@ -212,15 +317,15 @@ async function generarReportePDF() {
     }
 
     const { data: peluqueroInfo } = await clienteDb.from('peluqueros').select('nombre, porcentaje_comision').eq('id', peluqueroId).single();
-    const fechaInicio = new Date(fechaDesdeStr + 'T00:00:00');
-    const fechaFin = new Date(fechaHastaStr + 'T23:59:59');
+    const fechaInicio = new Date(fechaDesdeStr + 'T00:00:00').toISOString();
+    const fechaFin = new Date(fechaHastaStr + 'T23:59:59').toISOString();
 
     const { data: registros, error } = await clienteDb
         .from('caja')
         .select('monto_total, monto_comision, fecha_cobro')
         .eq('peluquero_id', peluqueroId)
-        .gte('fecha_cobro', fechaInicio.toISOString())
-        .lte('fecha_cobro', fechaFin.toISOString())
+        .gte('fecha_cobro', fechaInicio)
+        .lte('fecha_cobro', fechaFin)
         .order('fecha_cobro', { ascending: true });
 
     if (error || !registros || registros.length === 0) {
@@ -238,8 +343,8 @@ async function generarReportePDF() {
     doc.text(`Período: ${fechaDesdeStr} al ${fechaHastaStr}`, 14, 34);
 
     let cuerpoTabla = [];
-    let acumuladoTotalFacturado = 0;
-    let acumuladoTotalComision = 0;
+    let acumuladoFacturado = 0;
+    let acumuladoComision = 0;
 
     registros.forEach(reg => {
         const fechaObj = new Date(reg.fecha_cobro);
@@ -247,8 +352,8 @@ async function generarReportePDF() {
         const monto = Number(reg.monto_total);
         const comision = Number(reg.monto_comision);
 
-        acumuladoTotalFacturado += monto;
-        acumuladoTotalComision += comision;
+        acumuladoFacturado += monto;
+        acumuladoComision += comision;
 
         cuerpoTabla.push([fechaFormateada, 'Registrado en Caja', 'Servicio de Peluquería', `$${monto.toLocaleString('es-AR')}`, `$${comision.toLocaleString('es-AR')}`]);
     });
@@ -260,12 +365,12 @@ async function generarReportePDF() {
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
-    doc.text(`Total Facturado: $${acumuladoTotalFacturado.toLocaleString('es-AR')}`, 14, finalY);
-    doc.text(`Total Comisión a Pagar: $${acumuladoTotalComision.toLocaleString('es-AR')}`, 14, finalY + 7);
+    doc.text(`Total Facturado: $${acumuladoFacturado.toLocaleString('es-AR')}`, 14, finalY);
+    doc.text(`Total Comisión a Pagar: $${acumuladoComision.toLocaleString('es-AR')}`, 14, finalY + 7);
     doc.save(`Liquidacion_${peluqueroInfo.nombre.replace(/\s+/g, '_')}_${fechaDesdeStr}_al_${fechaHastaStr}.pdf`);
 }
 
-// --- 6. MÓDULO DE INVENTARIO (PAÑOL) ---
+// --- 7. MÓDULO DE INVENTARIO Y PRODUCTOS ---
 async function cargarInventario() {
     const { data: insumos, error } = await clienteDb.from('insumos').select('*').order('nombre', { ascending: true });
     if (!error) renderizarInventario(insumos);
@@ -275,10 +380,7 @@ function renderizarInventario(insumos) {
     const contenedor = document.getElementById('lista-insumos');
     contenedor.innerHTML = '';
     
-    if (insumos.length === 0) {
-        contenedor.innerHTML = '<p>No hay productos en el pañol.</p>';
-        return;
-    }
+    if (insumos.length === 0) return contenedor.innerHTML = '<p>No hay productos en el pañol.</p>';
 
     insumos.forEach(insumo => {
         const div = document.createElement('div');
@@ -289,28 +391,161 @@ function renderizarInventario(insumos) {
     });
 }
 
-// --- 7. CARGA DE DROPDOWNS ---
+async function cargarProductosAdmin() {
+    const contenedor = document.getElementById('lista-productos-admin');
+    if(!contenedor) return;
+    
+    const { data: insumos, error } = await clienteDb.from('insumos').select('*').order('nombre', { ascending: true });
+    if (error) return contenedor.innerHTML = '<p style="color:red;">Error al cargar.</p>';
+    if (insumos.length === 0) return contenedor.innerHTML = '<p>No hay productos.</p>';
+
+    let html = '';
+    insumos.forEach(insumo => {
+        html += `
+            <div class="producto-admin-card" style="border:1px solid #ddd; padding:10px; margin-bottom:10px; display:flex; justify-content:space-between;">
+                <div>
+                    <strong>${insumo.nombre}</strong><br>
+                    <span>Stock: ${insumo.stock_gramos}g</span>
+                </div>
+                <div>
+                    <input type="number" id="sumar-stock-${insumo.id}" placeholder="+ Cantidad" style="width:80px;">
+                    <button onclick="sumarStock(${insumo.id}, ${insumo.stock_gramos})">Sumar</button>
+                </div>
+            </div>`;
+    });
+    contenedor.innerHTML = html;
+}
+
+async function sumarStock(insumoId, stockActual) {
+    const cantidad = parseInt(document.getElementById(`sumar-stock-${insumoId}`).value);
+    if (!cantidad || cantidad <= 0 || isNaN(cantidad)) return alert("Cantidad inválida.");
+    
+    await clienteDb.from('insumos').update({ stock_gramos: stockActual + cantidad }).eq('id', insumoId);
+    cargarProductosAdmin();
+}
+
+// --- 8. MÓDULO RESERVA AVANZADA Y PRÓXIMOS TURNOS ---
+async function cargarClientesDropdown() {
+    const select = document.getElementById('select-cliente-avanzado');
+    const { data: clientes } = await clienteDb.from('clientes').select('*').order('nombre', { ascending: true });
+    if (clientes) {
+        let html = '<option value="">-- Selecciona un cliente --</option>';
+        clientes.forEach(c => html += `<option value="${c.id}">${c.nombre} ${c.apellido || ''}</option>`);
+        select.innerHTML = html;
+    }
+}
+
 async function cargarPeluquerosDropdown() {
     const { data: peluqueros } = await clienteDb.from('peluqueros').select('*').order('nombre', { ascending: true });
     if (!peluqueros) return;
 
     let html = '<option value="">-- Selecciona un profesional --</option>';
-    peluqueros.forEach(p => {
-        html += `<option value="${p.id}">${p.nombre}</option>`;
-    });
+    peluqueros.forEach(p => html += `<option value="${p.id}">${p.nombre}</option>`);
 
     if(document.getElementById('select-peluquero-avanzado')) document.getElementById('select-peluquero-avanzado').innerHTML = html;
     if(document.getElementById('select-peluquero')) document.getElementById('select-peluquero').innerHTML = html;
     if(document.getElementById('select-peluquero-reporte')) document.getElementById('select-peluquero-reporte').innerHTML = html;
 }
 
-// --- 8. TIEMPO REAL (WEBSOCKETS) ---
-clienteDb.channel('cambios-en-turnos').on('postgres_changes', { event: '*', schema: 'public', table: 'turnos' }, () => { cargarTurnos(); if(calendarioGlobal) cargarCalendario(); }).subscribe();
-clienteDb.channel('cambios-en-insumos').on('postgres_changes', { event: '*', schema: 'public', table: 'insumos' }, () => { cargarInventario(); }).subscribe();
-clienteDb.channel('cambios-en-caja').on('postgres_changes', { event: '*', schema: 'public', table: 'caja' }, () => { cargarCaja(); }).subscribe();
+async function agendarTurnoAvanzado() {
+    const clienteId = document.getElementById('select-cliente-avanzado').value;
+    const peluqueroId = document.getElementById('select-peluquero-avanzado').value;
+    const trabajo = document.getElementById('input-trabajo').value.trim();
+    const duracionMinutos = parseInt(document.getElementById('select-duracion').value) || 60;
+    const fechaHoraStr = document.getElementById('fecha-hora-turno').value;
+    const mensaje = document.getElementById('mensaje-reserva');
 
-// --- 9. ARRANQUE AUTOMÁTICO ---
+    if (!clienteId || !peluqueroId || !fechaHoraStr || !trabajo) return alert("Completa todos los campos.");
+
+    const fechaInicio = new Date(fechaHoraStr);
+    const fechaFin = new Date(fechaInicio.getTime() + (duracionMinutos * 60 * 1000));
+
+    const { error } = await clienteDb.from('turnos').insert([{
+        cliente_id: clienteId, peluquero_id: peluqueroId, descripcion_trabajo: trabajo,
+        duracion_minutos: duracionMinutos, fecha_hora_inicio: fechaInicio.toISOString(),
+        fecha_hora_fin: fechaFin.toISOString(), estado: 'programado'
+    }]);
+
+    if (!error) {
+        mensaje.style.color = '#27ae60';
+        mensaje.innerText = "¡Turno agendado!";
+        setTimeout(() => mensaje.innerText = '', 3000);
+        cargarTurnos();
+    }
+}
+
+async function cargarProximosTurnos() {
+    const contenedor = document.getElementById('lista-proximos-turnos');
+    const hoy = new Date();
+    const dentroDe7Dias = new Date();
+    dentroDe7Dias.setDate(hoy.getDate() + 7);
+
+    const { data: turnos } = await clienteDb.from('turnos')
+        .select('*, clientes(nombre, apellido), peluqueros(nombre)')
+        .gte('fecha_hora_inicio', hoy.toISOString())
+        .lte('fecha_hora_inicio', dentroDe7Dias.toISOString())
+        .order('fecha_hora_inicio', { ascending: true });
+
+    if (!turnos || turnos.length === 0) return contenedor.innerHTML = '<p>No hay turnos para los próximos 7 días.</p>';
+
+    let html = '';
+    turnos.forEach(turno => {
+        const fecha = new Date(turno.fecha_hora_inicio).toLocaleString('es-AR', { weekday: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+        html += `<div style="background:#fff; border-left:4px solid #3498db; padding:10px; margin-bottom:10px;">
+                    <strong>${fecha}</strong> | ${turno.clientes?.nombre || 'Cliente'} - ${turno.descripcion_trabajo || 'Turno'} con ${turno.peluqueros?.nombre || 'Sin asignar'}
+                 </div>`;
+    });
+    contenedor.innerHTML = html;
+}
+
+// --- 9. MÓDULO PROFESIONALES (ADMIN) ---
+async function guardarPeluquero() {
+    const nombre = document.getElementById('nuevo-peluquero-nombre').value.trim();
+    const com = document.getElementById('nuevo-peluquero-comision').value.trim();
+    const color = document.getElementById('nuevo-peluquero-color').value;
+    
+    if (!nombre || !com) return alert("Nombre y comisión obligatorios.");
+    
+    await clienteDb.from('peluqueros').insert([{ nombre: nombre, porcentaje_comision: parseFloat(com), color_calendario: color }]);
+    cargarPeluquerosAdmin();
+    cargarPeluquerosDropdown();
+}
+
+async function cargarPeluquerosAdmin() {
+    const contenedor = document.getElementById('lista-peluqueros-admin');
+    if(!contenedor) return;
+    
+    const { data: peluqueros } = await clienteDb.from('peluqueros').select('*').order('nombre', { ascending: true });
+    let html = '';
+    peluqueros.forEach(p => {
+        html += `<div style="border-left: 6px solid ${p.color_calendario}; padding: 10px; margin-bottom: 10px; background: #fff; display:flex; justify-content:space-between;">
+                    <div><strong>${p.nombre}</strong><br><span>Comisión: ${p.porcentaje_comision}%</span></div>
+                    <button onclick="borrarPeluquero('${p.id}')" style="background:#e74c3c; color:white; border:none; padding:5px; border-radius:5px;">Borrar</button>
+                 </div>`;
+    });
+    contenedor.innerHTML = html;
+}
+
+async function borrarPeluquero(id) {
+    if(confirm("¿Borrar este profesional?")) {
+        await clienteDb.from('peluqueros').delete().eq('id', id);
+        cargarPeluquerosAdmin();
+        cargarPeluquerosDropdown();
+    }
+}
+
+// --- 10. TIEMPO REAL (WEBSOCKETS) ---
+clienteDb.channel('cambios-en-turnos').on('postgres_changes', { event: '*', schema: 'public', table: 'turnos' }, () => { cargarTurnos(); if(calendarioGlobal) cargarCalendario(); cargarProximosTurnos(); }).subscribe();
+clienteDb.channel('cambios-en-insumos').on('postgres_changes', { event: '*', schema: 'public', table: 'insumos' }, () => { cargarInventario(); }).subscribe();
+clienteDb.channel('cambios-en-caja').on('postgres_changes', { event: '*', schema: 'public', table: 'caja' }, () => { cargarCaja(); cargarCajaMensual(); }).subscribe();
+
+// --- 11. ARRANQUE AUTOMÁTICO ---
 cargarPeluquerosDropdown();
+cargarClientesDropdown();
 cargarInventario();
 cargarCaja();
+cargarCajaMensual();
 cargarTurnos();
+cargarProximosTurnos();
+cargarPeluquerosAdmin();
+cargarProductosAdmin();
