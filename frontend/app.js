@@ -430,27 +430,18 @@ clienteDb
 
 // --- LÓGICA DEL MENÚ DE SOLAPAS ---
 function abrirSolapa(idSolapa, evento) {
-    // 1. Ocultamos todos los contenidos
     const contenidos = document.querySelectorAll('.contenido-solapa');
     contenidos.forEach(div => div.classList.remove('activa'));
     
-    // 2. Apagamos todos los botones
     const botones = document.querySelectorAll('.btn-solapa');
     botones.forEach(btn => btn.classList.remove('activo'));
     
-    // 3. Encendemos la solapa seleccionada y su botón
     document.getElementById(idSolapa).classList.add('activa');
     evento.currentTarget.classList.add('activo');
 
-    // 4. EL TRUCO: Retrasamos 150ms la carga para asegurar que la pestaña ya es 100% visible
-    if (idSolapa === 'solapa-calendario') {
-        setTimeout(() => {
-            if (!calendarioGlobal) {
-                cargarCalendario(); // Lo dibuja por primera vez
-            } else {
-                calendarioGlobal.render(); // Lo reacomoda si ya existía
-            }
-        }, 150);
+    // TRUCO DEL CALENDARIO: Actualizado para la nueva "solapa-reserva"
+    if (idSolapa === 'solapa-reserva' && typeof calendarioGlobal !== 'undefined' && calendarioGlobal) {
+        setTimeout(() => { calendarioGlobal.render(); }, 100);
     }
 }
 // --- NUEVO: MÓDULO DE RESERVA AVANZADA (SOLAPA 3) ---
