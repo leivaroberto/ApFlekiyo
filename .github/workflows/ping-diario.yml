@@ -13,4 +13,4 @@ jobs:
     steps:
       - name: Realizar petición web (Ping)
         # Aquí usas curl para disparar la URL de tu servidor
-        run: curl -s https://app-mecanico.onrender.com/
+        run: curl -s https://apflekiyo.onrender.com
