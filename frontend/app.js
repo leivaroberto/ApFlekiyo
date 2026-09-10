@@ -590,16 +590,7 @@ clienteDb.channel('cambios-en-turnos').on('postgres_changes', { event: '*', sche
 clienteDb.channel('cambios-en-insumos').on('postgres_changes', { event: '*', schema: 'public', table: 'insumos' }, () => { cargarInventario(); }).subscribe();
 clienteDb.channel('cambios-en-caja').on('postgres_changes', { event: '*', schema: 'public', table: 'caja' }, () => { cargarCaja(); cargarCajaMensual(); }).subscribe();
 
-// --- 11. ARRANQUE AUTOMÁTICO ---
-cargarPeluquerosDropdown();
-cargarClientesDropdown();
-cargarInventario();
-cargarCaja();
-cargarCajaMensual();
-cargarTurnos();
-cargarProximosTurnos();
-cargarPeluquerosAdmin();
-cargarProductosAdmin();
+
 
 // --- 12. MÓDULO DE ALARMAS Y NOTIFICACIONES ---
 let turnosNotificados = []; 
@@ -670,3 +661,14 @@ function lanzarAlarma(turno, minutosRestantes) {
 // Inicializar las alarmas (Asegúrate de que esto quede al final del todo)
 solicitarPermisoNotificaciones();
 setInterval(monitorearTurnosProximos, 60000); // Revisa cada 60 segundos
+
+// --- 11. ARRANQUE AUTOMÁTICO ---
+cargarPeluquerosDropdown();
+cargarClientesDropdown();
+cargarInventario();
+cargarCaja();
+cargarCajaMensual();
+cargarTurnos();
+cargarProximosTurnos();
+cargarPeluquerosAdmin();
+cargarProductosAdmin();
