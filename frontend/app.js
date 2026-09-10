@@ -604,7 +604,32 @@ function solicitarPermisoNotificaciones() {
         });
     }
 }
+// --- MÓDULO DE ALARMAS ---
+let temporizadorAlarmas;
 
+function activarAlarmas() {
+    if (!("Notification" in window)) {
+        alert("Tu navegador no soporta notificaciones.");
+        return;
+    }
+
+    Notification.requestPermission().then(permission => {
+        const textoEstado = document.getElementById('estado-alarma');
+        
+        if (permission === "granted") {
+            textoEstado.innerText = "Alarmas ACTIVAS 🟢"; // Aquí cambiamos el texto
+            textoEstado.style.color = "#27ae60";
+            
+            if (temporizadorAlarmas) clearInterval(temporizadorAlarmas);
+            temporizadorAlarmas = setInterval(revisarTurnosProximos, 60000);
+            alert("¡Notificaciones activadas con éxito!");
+        } else {
+            textoEstado.innerText = "Permiso Denegado 🔴";
+            textoEstado.style.color = "red";
+            alert("Debes dar permiso en tu navegador para usar las alarmas.");
+        }
+    });
+}
 async function monitorearTurnosProximos() {
     const hoyInicio = new Date();
     const hoyFin = new Date();
