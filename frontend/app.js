@@ -100,6 +100,13 @@ function renderizarTurnos(turnos) {
         return;
     }
 
+    // 1. NUEVO: Ordenamos los turnos para empujar los finalizados al fondo
+    turnos.sort((a, b) => {
+        if (a.estado === 'finalizado' && b.estado !== 'finalizado') return 1;
+        if (a.estado !== 'finalizado' && b.estado === 'finalizado') return -1;
+        return 0; // Si ambos están igual, respeta el orden de horario original
+    });
+
     turnos.forEach(turno => {
         const div = document.createElement('div');
         div.className = `turno-card estado-${turno.estado}`;
@@ -110,22 +117,39 @@ function renderizarTurnos(turnos) {
         const apellidoCliente = turno.clientes?.apellido || '';
         const trabajo = turno.descripcion_trabajo || 'Servicio de salón';
         
+        // 2. NUEVO: Verificamos si está finalizado para bloquear modificaciones
+        const esFinalizado = turno.estado === 'finalizado';
+        
+        let controlesHTML = '';
+        let botonBorrarHTML = '';
+
+        if (esFinalizado) {
+            // Diseño bloqueado de solo lectura
+            controlesHTML = `<span style="color: #27ae60; font-weight: bold; font-size: 14px;">✅ Servicio Finalizado</span>`;
+            // El botón de borrar queda vacío para que no se pueda eliminar accidentalmente
+        } else {
+            // Diseño interactivo normal para turnos pendientes
+            controlesHTML = `
+                <select class="selector-estado" onchange="cambiarEstado('${turno.id}', this.value)">
+                    <option value="programado" ${turno.estado === 'programado' ? 'selected' : ''}>Programado (Gris)</option>
+                    <option value="check-in" ${turno.estado === 'check-in' ? 'selected' : ''}>Check-in (Amarillo)</option>
+                    <option value="en_proceso" ${turno.estado === 'en_proceso' ? 'selected' : ''}>En Proceso (Naranja)</option>
+                    <option value="finalizado" ${turno.estado === 'finalizado' ? 'selected' : ''}>Finalizado (Verde)</option>
+                </select>
+            `;
+            botonBorrarHTML = `<button onclick="borrarTurno('${turno.id}')" style="background: transparent; border: none; font-size: 18px; cursor: pointer;" title="Borrar Turno">❌</button>`;
+        }
+        
         div.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: start; width: 100%;">
                 <div>
                     <strong style="font-size: 16px; color: #2c3e50;">⏰ ${horaFormateada} | 👤 ${nombreCliente} ${apellidoCliente}</strong><br>
                     <span style="color: #e67e22; font-size: 14px; font-weight: 500; display: inline-block; margin-top: 4px;">📝 ${trabajo}</span><br>
-                    
                     <div style="margin-top: 8px;">
-                        <select class="selector-estado" onchange="cambiarEstado('${turno.id}', this.value)">
-                            <option value="programado" ${turno.estado === 'programado' ? 'selected' : ''}>Programado (Gris)</option>
-                            <option value="check-in" ${turno.estado === 'check-in' ? 'selected' : ''}>Check-in (Amarillo)</option>
-                            <option value="en_proceso" ${turno.estado === 'en_proceso' ? 'selected' : ''}>En Proceso (Naranja)</option>
-                            <option value="finalizado" ${turno.estado === 'finalizado' ? 'selected' : ''}>Finalizado (Verde)</option>
-                        </select>
+                        ${controlesHTML}
                     </div>
                 </div>
-                <button onclick="borrarTurno('${turno.id}')" style="background: transparent; border: none; font-size: 18px; cursor: pointer;" title="Borrar Turno">❌</button>
+                ${botonBorrarHTML}
             </div>
             <div class="etiqueta-peluquero" style="background-color: ${turno.peluqueros?.color_calendario || '#ccc'};">
                 ${turno.peluqueros?.nombre || 'Sin asignar'}
