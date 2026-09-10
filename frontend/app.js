@@ -519,27 +519,57 @@ async function agendarTurnoAvanzado() {
 
 async function cargarProximosTurnos() {
     const contenedor = document.getElementById('lista-proximos-turnos');
-    if(!contenedor) return;
+    contenedor.innerHTML = '<p>Buscando la agenda...</p>';
 
     const hoy = new Date();
     const dentroDe7Dias = new Date();
     dentroDe7Dias.setDate(hoy.getDate() + 7);
 
-    const { data: turnos } = await clienteDb.from('turnos')
-        .select('*, clientes(nombre, apellido), peluqueros(nombre)')
+    const { data: turnos, error } = await clienteDb
+        .from('turnos')
+        .select('*, clientes(nombre, apellido, telefono), peluqueros(nombre)')
         .gte('fecha_hora_inicio', hoy.toISOString())
         .lte('fecha_hora_inicio', dentroDe7Dias.toISOString())
         .order('fecha_hora_inicio', { ascending: true });
 
-    if (!turnos || turnos.length === 0) return contenedor.innerHTML = '<p>No hay turnos para los próximos 7 días.</p>';
+    if (error) return contenedor.innerHTML = '<p style="color:red;">Error de conexión.</p>';
+    if (turnos.length === 0) return contenedor.innerHTML = '<p>No hay turnos agendados para los próximos 7 días.</p>';
 
     let html = '';
     turnos.forEach(turno => {
-        const fecha = new Date(turno.fecha_hora_inicio).toLocaleString('es-AR', { weekday: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' });
-        html += `<div style="background:#fff; border-left:4px solid #3498db; padding:10px; margin-bottom:10px; border-radius:5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <strong style="color:#2c3e50;">${fecha}</strong><br>
-                    <span style="font-size:14px; color:#555;">👤 ${turno.clientes?.nombre || 'Cliente'} - ${turno.descripcion_trabajo || 'Turno'} con ${turno.peluqueros?.nombre || 'Sin asignar'}</span>
-                 </div>`;
+        const fecha = new Date(turno.fecha_hora_inicio);
+        const opcionesFecha = { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute:'2-digit' };
+        const fechaFormateada = fecha.toLocaleDateString('es-AR', opcionesFecha);
+        
+        const cliente = turno.clientes;
+        const peluquero = turno.peluqueros?.nombre || 'Sin asignar';
+        
+        // Lógica de WhatsApp restaurada
+        let linkWhatsapp = '#';
+        let textoBtn = 'Sin teléfono';
+        let estiloBtn = 'background-color: #ccc; cursor: not-allowed;';
+
+        if (cliente && cliente.telefono && cliente.telefono !== 'Sin asignar') {
+            const numeroLimpio = cliente.telefono.replace(/\D/g, ''); 
+            if (numeroLimpio.length > 5) { 
+                const mensaje = `¡Hola ${cliente.nombre}! Te escribimos de la peluquería para recordarte tu turno del día ${fechaFormateada} con ${peluquero}. ¿Nos confirmas tu asistencia?`;
+                linkWhatsapp = `https://wa.me/${numeroLimpio}?text=${encodeURIComponent(mensaje)}`;
+                textoBtn = '📱 Enviar WhatsApp';
+                estiloBtn = ''; 
+            }
+        }
+
+        html += `
+            <div class="turno-proximo-card">
+                <div class="turno-proximo-info">
+                    <strong style="text-transform: capitalize; color:#2c3e50; font-size:16px;">📅 ${fechaFormateada}</strong>
+                    <span>👤 Cliente: ${cliente ? cliente.nombre + ' ' + (cliente.apellido || '') : 'Desconocido'}</span>
+                    <span>✂️ Profesional: ${peluquero}</span>
+                    <span style="color:#7f8c8d; font-size:13px;">📌 Estado actual: ${turno.estado}</span>
+                </div>
+                <a href="${linkWhatsapp}" target="_blank" class="btn-whatsapp" style="${estiloBtn}">${textoBtn}</a>
+            </div>
+        `;
     });
     contenedor.innerHTML = html;
 }
