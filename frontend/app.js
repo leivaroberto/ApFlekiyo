@@ -44,6 +44,7 @@ async function cargarCalendario() {
 
         return {
             id: turno.id,
+            // ¡Corregido! Restauramos las comillas invertidas (backticks) para que el texto se forme bien
             title: `${nombreCliente} - ${turno.descripcion_trabajo || 'Turno'} (${nombrePeluquero})`,
             start: turno.fecha_hora_inicio,
             end: turno.fecha_hora_fin,
@@ -67,7 +68,39 @@ async function cargarCalendario() {
         slotMaxTime: '22:00:00',
         allDaySlot: false,
         height: 650,
-        events: eventos
+        events: eventos,
+
+        // --- CORRECCIÓN: ACTIVACIÓN DE DRAG & DROP ---
+        editable: true, // Permite mover los turnos
+        eventOverlap: true, 
+
+        eventDrop: async function(info) {
+            const turnoId = info.event.id;
+            const nuevaFechaInicio = info.event.start;
+            const nuevaFechaFin = info.event.end ? info.event.end : new Date(nuevaFechaInicio.getTime() + (60 * 60 * 1000)); 
+
+            if(confirm(`¿Confirmas la reprogramación para el ${nuevaFechaInicio.toLocaleString('es-AR', {day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'})}?`)) {
+                
+                const { error } = await clienteDb
+                    .from('turnos')
+                    .update({ 
+                        fecha_hora_inicio: nuevaFechaInicio.toISOString(),
+                        fecha_hora_fin: nuevaFechaFin.toISOString()
+                    })
+                    .eq('id', turnoId);
+
+                if (error) {
+                    alert("Error al reprogramar en la base de datos.");
+                    console.error(error);
+                    info.revert(); // Devuelve el turno a su lugar si hay error
+                } else {
+                    // Refresca la lista de turnos de hoy en caso de que lo hayas movido al día actual
+                    if (typeof cargarTurnos === 'function') cargarTurnos(); 
+                }
+            } else {
+                info.revert(); // Devuelve el turno si el usuario cancela en el cartelito
+            }
+        }
     });
 
     calendarioGlobal.render();
