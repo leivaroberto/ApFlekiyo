@@ -318,6 +318,8 @@ function renderizarCaja(registros) {
 async function cargarCajaMensual() {
     const contenedorComisiones = document.getElementById('lista-comisiones-mes');
     const textoTotal = document.getElementById('total-mes-ingresos');
+    const tablaDetalle = document.getElementById('tabla-detalle-mes');
+    const textoContador = document.getElementById('contador-trabajos-mes');
     
     if(!contenedorComisiones || !textoTotal) return;
 
@@ -326,26 +328,49 @@ async function cargarCajaMensual() {
 
     const { data: registros, error } = await clienteDb
         .from('caja')
-        .select('monto_total, monto_comision, peluqueros(nombre)')
-        .gte('fecha_cobro', primerDiaMes);
+        .select('monto_total, monto_comision, fecha_cobro, peluqueros(nombre)')
+        .gte('fecha_cobro', primerDiaMes)
+        .order('fecha_cobro', { ascending: true });
 
-    if (error) return contenedorComisiones.innerHTML = '<p style="color:red;">Error de conexión.</p>';
+    if (error) return contenedorComisiones.innerHTML = '<p style="color:red;">Error de conexión.</p>'; 
     if (registros.length === 0) {
         textoTotal.innerText = '$0';
+        if (textoContador) textoContador.innerText = 'Total de trabajos realizados: 0';
+        if (tablaDetalle) tablaDetalle.innerHTML = '<tr><td colspan="4" style="padding: 10px; text-align: center;">No hay ingresos este mes.</td></tr>';
         return contenedorComisiones.innerHTML = '<p>No hay ingresos este mes.</p>';
     }
 
     let facturacionTotal = 0;
     const liquidacion = {};
+    let htmlTabla = '';
 
     registros.forEach(reg => {
-        facturacionTotal += Number(reg.monto_total);
+        const montoTotal = Number(reg.monto_total);
+        const montoComision = Number(reg.monto_comision);
         const nombre = reg.peluqueros?.nombre || 'Sin asignar';
+        const fechaFormateada = new Date(reg.fecha_cobro).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+
+        // Sumatorias para las tarjetas superiores (lógica original)
+        facturacionTotal += montoTotal;
         if (!liquidacion[nombre]) liquidacion[nombre] = 0;
-        liquidacion[nombre] += Number(reg.monto_comision);
+        liquidacion[nombre] += montoComision;
+
+        // Construcción de la fila para la nueva tabla
+        htmlTabla += `
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 10px;">${fechaFormateada}</td>
+                <td style="padding: 10px; font-weight: bold; color: #2c3e50;">${nombre}</td>
+                <td style="padding: 10px; color: #27ae60;">$${montoTotal.toLocaleString('es-AR')}</td>
+                <td style="padding: 10px; color: #e67e22;">$${montoComision.toLocaleString('es-AR')}</td>
+            </tr>
+        `;
     });
 
+    // Inyectar resultados visuales
     textoTotal.innerText = `$${facturacionTotal.toLocaleString('es-AR')}`;
+    if (textoContador) textoContador.innerText = `Total de trabajos realizados: ${registros.length}`;
+    if (tablaDetalle) tablaDetalle.innerHTML = htmlTabla;
+
     let htmlComisiones = '';
     for (const [nombre, monto] of Object.entries(liquidacion)) {
         htmlComisiones += `<div class="comision-mes-item"><strong>👤 ${nombre}</strong><span style="color:#e67e22; font-weight:bold;">$${monto.toLocaleString('es-AR')}</span></div>`;
@@ -712,7 +737,76 @@ function lanzarAlarma(turno, minutosRestantes) {
         window.speechSynthesis.speak(voz);
     }
 }
+async function generarPDFCajaMensual() {
+    const hoy = new Date();
+    const primerDiaMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString();
+    const mesActualNombre = hoy.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
 
+    const { data: registros, error } = await clienteDb
+        .from('caja')
+        .select('monto_total, monto_comision, fecha_cobro, peluqueros(nombre)')
+        .gte('fecha_cobro', primerDiaMes)
+        .order('fecha_cobro', { ascending: true });
+
+    if (error || !registros || registros.length === 0) {
+        alert("No hay trabajos registrados este mes para exportar.");
+        return;
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+
+    // Encabezado
+    doc.setFontSize(18);
+    doc.setTextColor(44, 62, 80);
+    doc.text("AppFlekiyo - Reporte de Caja Mensual", 14, 20);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(127, 140, 141);
+    doc.text(`Período: ${mesActualNombre.toUpperCase()}`, 14, 28);
+    doc.text(`Total de trabajos realizados: ${registros.length}`, 14, 34);
+
+    let cuerpoTabla = [];
+    let acumuladoTotal = 0;
+    let acumuladoComisiones = 0;
+
+    registros.forEach(reg => {
+        const fechaFormateada = new Date(reg.fecha_cobro).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const profesional = reg.peluqueros?.nombre || 'Sin asignar';
+        const cobrado = Number(reg.monto_total);
+        const comision = Number(reg.monto_comision);
+
+        acumuladoTotal += cobrado;
+        acumuladoComisiones += comision;
+
+        cuerpoTabla.push([
+            fechaFormateada,
+            profesional,
+            `$${cobrado.toLocaleString('es-AR')}`,
+            `$${comision.toLocaleString('es-AR')}`
+        ]);
+    });
+
+    // Dibujar tabla
+    doc.autoTable({
+        startY: 42,
+        head: [['Fecha', 'Profesional', 'Cobrado', 'Comisión']],
+        body: cuerpoTabla,
+        theme: 'striped',
+        headStyles: { fillColor: [44, 62, 80] },
+        styles: { fontSize: 10, cellPadding: 5 }
+    });
+
+    // Totales Finales al pie de la tabla
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setTextColor(44, 62, 80);
+    doc.text(`Facturación Total del Mes: $${acumuladoTotal.toLocaleString('es-AR')}`, 14, finalY);
+    doc.text(`Total Comisiones Generadas: $${acumuladoComisiones.toLocaleString('es-AR')}`, 14, finalY + 7);
+
+    // Guardar archivo
+    doc.save(`Reporte_Caja_${mesActualNombre.replace(/\s+/g, '_')}.pdf`);
+}
 // Inicializar las alarmas (Asegúrate de que esto quede al final del todo)
 solicitarPermisoNotificaciones();
 setInterval(monitorearTurnosProximos, 60000); // Revisa cada 60 segundos
