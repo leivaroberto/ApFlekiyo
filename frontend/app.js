@@ -600,3 +600,73 @@ cargarTurnos();
 cargarProximosTurnos();
 cargarPeluquerosAdmin();
 cargarProductosAdmin();
+
+// --- 12. MÓDULO DE ALARMAS Y NOTIFICACIONES ---
+let turnosNotificados = []; 
+
+function solicitarPermisoNotificaciones() {
+    if ("Notification" in window) {
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                console.log("Notificaciones de AppFlekiyo activadas.");
+            }
+        });
+    }
+}
+
+async function monitorearTurnosProximos() {
+    const hoyInicio = new Date();
+    const hoyFin = new Date();
+    hoyFin.setHours(23, 59, 59, 999);
+
+    const { data: turnos, error } = await clienteDb
+        .from('turnos')
+        .select('id, fecha_hora_inicio, clientes(nombre, apellido), peluqueros(nombre)')
+        .gte('fecha_hora_inicio', hoyInicio.toISOString())
+        .lte('fecha_hora_inicio', hoyFin.toISOString())
+        .eq('estado', 'programado'); 
+
+    if (error || !turnos) return;
+
+    const ahora = new Date();
+
+    turnos.forEach(turno => {
+        const fechaTurno = new Date(turno.fecha_hora_inicio);
+        const diferenciaMinutos = Math.floor((fechaTurno - ahora) / (1000 * 60));
+
+        // Si faltan entre 1 y 15 minutos y no sonó antes
+        if (diferenciaMinutos > 0 && diferenciaMinutos <= 15 && !turnosNotificados.includes(turno.id)) {
+            lanzarAlarma(turno, diferenciaMinutos);
+            turnosNotificados.push(turno.id);
+        }
+    });
+}
+
+function lanzarAlarma(turno, minutosRestantes) {
+    const nombreCliente = turno.clientes?.nombre || 'Un cliente';
+    const nombrePeluquero = turno.peluqueros?.nombre || 'el salón';
+    const mensaje = `¡Atención! Turno en ${minutosRestantes} minutos: ${nombreCliente} con ${nombrePeluquero}.`;
+
+    // Notificación visual
+    if ("Notification" in window && Notification.permission === "granted") {
+        new Notification("⏰ Alarma AppFlekiyo", {
+            body: mensaje,
+            icon: "https://cdn-icons-png.flaticon.com/512/3237/3237472.png",
+            vibrate: [200, 100, 200] 
+        });
+    } else {
+        alert(mensaje);
+    }
+
+    // Alarma por voz (Sintetizador del navegador)
+    if ('speechSynthesis' in window) {
+        const voz = new SpeechSynthesisUtterance(mensaje);
+        voz.lang = 'es-AR'; 
+        voz.rate = 1; 
+        window.speechSynthesis.speak(voz);
+    }
+}
+
+// Inicializar las alarmas (Asegúrate de que esto quede al final del todo)
+solicitarPermisoNotificaciones();
+setInterval(monitorearTurnosProximos, 60000); // Revisa cada 60 segundos
