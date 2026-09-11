@@ -2,6 +2,51 @@
 const SUPABASE_URL = 'https://xpufmicxmbhpqocrwgdz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwdWZtaWN4bWJocHFvY3J3Z2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MzE1OTcsImV4cCI6MjEwMzEwNzU5N30.811oNtrlBbEvNvhxaLlvJBZtqSpU98ZQ9sORRh4EIu8';
 const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// --- MÓDULO DE AUTENTICACIÓN (INGRESO DE PELUQUERÍAS) ---
+let usuarioActual = null;
+
+async function iniciarSesion() {
+    const email = document.getElementById('login-email').value;
+    const password = document.getElementById('login-password').value;
+    const mensaje = document.getElementById('login-mensaje');
+
+    if (!email || !password) {
+        mensaje.innerText = "Por favor, ingresa correo y contraseña.";
+        return;
+    }
+
+    mensaje.innerText = "Iniciando sesión...";
+    mensaje.style.color = "#3498db";
+
+    // Validamos las credenciales con Supabase Auth
+    const { data, error } = await clienteDb.auth.signInWithPassword({
+        email: email,
+        password: password
+    });
+
+    if (error) {
+        mensaje.innerText = "Credenciales incorrectas.";
+        mensaje.style.color = "red";
+        console.error("Error de login:", error.message);
+    } else {
+        usuarioActual = data.user;
+        
+        // Ocultamos la pantalla de bloqueo
+        document.getElementById('pantalla-login').style.display = 'none';
+        
+        // Disparamos la carga de datos de esta peluquería
+        inicializarApp(); 
+    }
+}
+
+// Envolvemos las funciones de arranque para que esperen al login
+function inicializarApp() {
+    // Aquí puedes agregar todas tus funciones de arranque
+    cargarTurnos();
+    // cargarClientesDropdown();
+    // cargarPeluquerosDropdown();
+    // ... el resto de tus cargas
+}
 
 let calendarioGlobal = null;
 
