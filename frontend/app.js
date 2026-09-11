@@ -42,10 +42,16 @@ async function iniciarSesion() {
 // Envolvemos las funciones de arranque para que esperen al login
 function inicializarApp() {
     // Aquí puedes agregar todas tus funciones de arranque
+    // --- 11. ARRANQUE AUTOMÁTICO ---
+    cargarPeluquerosDropdown();
+    cargarClientesDropdown();
+    cargarInventario();
+    cargarCaja();
+    cargarCajaMensual();
     cargarTurnos();
-    // cargarClientesDropdown();
-    // cargarPeluquerosDropdown();
-    // ... el resto de tus cargas
+    cargarProximosTurnos();
+    cargarPeluquerosAdmin();
+    cargarProductosAdmin();
 }
 
 let calendarioGlobal = null;
@@ -947,13 +953,4 @@ async function generarPDFCajaMensual() {
 solicitarPermisoNotificaciones();
 setInterval(monitorearTurnosProximos, 60000); // Revisa cada 60 segundos
 
-// --- 11. ARRANQUE AUTOMÁTICO ---
-cargarPeluquerosDropdown();
-cargarClientesDropdown();
-cargarInventario();
-cargarCaja();
-cargarCajaMensual();
-cargarTurnos();
-cargarProximosTurnos();
-cargarPeluquerosAdmin();
-cargarProductosAdmin();
+
