@@ -17,6 +17,19 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
+    <!-- PANTALLA DE LOGIN -->
+<div id="pantalla-login" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #2c3e50; display: flex; justify-content: center; align-items: center; z-index: 9999;">
+    <div style="background: white; padding: 40px; border-radius: 10px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+        <h2 style="color: #2c3e50; margin-bottom: 20px;">✂️ AppFlekiyo</h2>
+        <p style="margin-bottom: 20px; color: #7f8c8d;">Inicia sesión en tu salón</p>
+        
+        <input type="email" id="login-email" placeholder="Correo electrónico" style="width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px;">
+        <input type="password" id="login-password" placeholder="Contraseña" style="width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #ccc; border-radius: 5px;">
+        
+        <button onclick="iniciarSesion()" style="width: 100%; padding: 12px; background: #3498db; color: white; border: none; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold;">Ingresar</button>
+        <p id="login-mensaje" style="color: red; margin-top: 15px; font-size: 14px;"></p>
+    </div>
+</div>
     <header class="header">
         <h1>VERONA Estilistas</h1>
         <p>AppFlekiyo - Sistema de Gestión Integral</p> 
