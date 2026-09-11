@@ -3,6 +3,8 @@ const SUPABASE_URL = 'https://xpufmicxmbhpqocrwgdz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwdWZtaWN4bWJocHFvY3J3Z2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MzE1OTcsImV4cCI6MjEwMzEwNzU5N30.811oNtrlBbEvNvhxaLlvJBZtqSpU98ZQ9sORRh4EIu8';
 const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // --- MÓDULO DE AUTENTICACIÓN (INGRESO DE PELUQUERÍAS) ---
+// Variable global para saber en qué peluquería estamos trabajando
+let peluqueriaIdActual = null;
 let usuarioActual = null;
 
 async function iniciarSesion() {
@@ -18,25 +20,43 @@ async function iniciarSesion() {
     mensaje.innerText = "Iniciando sesión...";
     mensaje.style.color = "#3498db";
 
-    // Validamos las credenciales con Supabase Auth
-    const { data, error } = await clienteDb.auth.signInWithPassword({
+    // 1. Validamos las credenciales con Supabase Auth
+    const { data: authData, error: authError } = await clienteDb.auth.signInWithPassword({
         email: email,
         password: password
     });
 
-    if (error) {
+    if (authError) {
         mensaje.innerText = "Credenciales incorrectas.";
         mensaje.style.color = "red";
-        console.error("Error de login:", error.message);
-    } else {
-        usuarioActual = data.user;
-        
-        // Ocultamos la pantalla de bloqueo
-        document.getElementById('pantalla-login').style.display = 'none';
-        
-        // Disparamos la carga de datos de esta peluquería
-        inicializarApp(); 
+        console.error("Error de login:", authError.message);
+        return;
     }
+
+    usuarioActual = authData.user;
+
+    // 2. Buscamos a qué peluquería pertenece este usuario
+    const { data: perfilData, error: perfilError } = await clienteDb
+        .from('perfiles_usuarios')
+        .select('peluqueria_id')
+        .eq('id', usuarioActual.id)
+        .single();
+
+    if (perfilError || !perfilData) {
+        mensaje.innerText = "Error: Este usuario no tiene una peluquería asignada.";
+        mensaje.style.color = "red";
+        console.error("Error al buscar perfil:", perfilError);
+        return;
+    }
+
+    // 3. Guardamos el ID del salón y arrancamos la app
+    peluqueriaIdActual = perfilData.peluqueria_id;
+    
+    // Ocultamos la pantalla de bloqueo
+    document.getElementById('pantalla-login').style.display = 'none';
+    
+    // Disparamos la carga de datos
+    inicializarApp(); 
 }
 
 // Envolvemos las funciones de arranque para que esperen al login
