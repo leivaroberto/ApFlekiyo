@@ -106,21 +106,27 @@ async function cargarCalendario() {
     calendarioGlobal.render();
 }
 
-// --- 4. MÓDULO DE TURNOS DE HOY ---
 async function cargarTurnos() {
-    const inicioDelDia = new Date();
-    inicioDelDia.setHours(0, 0, 0, 0);
+    // 1. Calculamos el inicio y el fin exacto del día de hoy
+    const hoyInicio = new Date();
+    hoyInicio.setHours(0, 0, 0, 0);
 
+    const hoyFin = new Date();
+    hoyFin.setHours(23, 59, 59, 999);
+
+    // 2. Aplicamos los filtros de fecha (.gte y .lte) para aislar el día presente
     const { data: turnos, error } = await clienteDb
         .from('turnos')
-        .select('*, clientes(nombre, apellido), peluqueros(nombre, color_calendario)')
-        .gte('fecha_hora_inicio', inicioDelDia.toISOString())
+        .select('*, peluqueros(nombre, color_calendario), clientes(nombre, apellido)')
+        .gte('fecha_hora_inicio', hoyInicio.toISOString()) 
+        .lte('fecha_hora_inicio', hoyFin.toISOString())    
         .order('fecha_hora_inicio', { ascending: true });
 
     if (error) {
         console.error("Error al cargar turnos:", error);
         return;
     }
+
     renderizarTurnos(turnos);
 }
 
