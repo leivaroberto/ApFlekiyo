@@ -192,20 +192,45 @@ function renderizarTurnos(turnos) {
     });
 }
 
+// Función para actualizar la base de datos (Sin descuento automático de stock)
 async function cambiarEstado(turnoId, nuevoEstado) {
-    const { error } = await clienteDb.from('turnos').update({ estado: nuevoEstado }).eq('id', turnoId);
-    if (error) return alert("Error al actualizar el estado.");
+    // A. Actualizamos el color en Supabase como siempre
+    const { error } = await clienteDb
+        .from('turnos')
+        .update({ estado: nuevoEstado })
+        .eq('id', turnoId);
 
+    if (error) {
+        alert("Error al actualizar el estado. Revisa los permisos.");
+        console.error(error);
+        return; 
+    }
+
+    // B. LÓGICA DE CAJA Y RESEÑA
     if (nuevoEstado === 'finalizado') {
-        const resena = prompt("Turno finalizado. Escribe una breve reseña del trabajo realizado:");
-        const gramos = prompt("¿Cuántos gramos de Tintura se usaron? (Si no usó, escribe 0)");
+        const resena = prompt("Turno finalizado. Escribe una breve reseña del trabajo realizado (Ej. Mechas con gorro, decoloración suave):");
+        
+        // Ya no preguntamos por la tintura, pasamos directo al cobro
         const precio = prompt("¿Cuál fue el precio total cobrado al cliente? (Ej: 15000)");
 
-        if (gramos !== null && precio !== null && resena !== null) {
-            const RENDER_URL = 'https://apflekiyo.onrender.com';
-            try {
-                const { data: turnoInfo } = await clienteDb.from('turnos').select('peluquero_id').eq('id', turnoId).single();
+        if (precio !== null && resena !== null) {
+            // Mostramos la nota recordatoria inmediatamente después de ingresar el cobro
+            alert("Nota: Actualizar el stock de productos en el caso de haber utilizado.");
 
+            const RENDER_URL = 'https://apflekiyo.onrender.com'; 
+            
+            try {
+                // 1. Guardamos la reseña en el turno
+                await clienteDb.from('turnos').update({ resena: resena }).eq('id', turnoId);
+                
+                // 2. Averiguamos qué peluquero atendió este turno para su comisión
+                const { data: turnoInfo } = await clienteDb
+                    .from('turnos')
+                    .select('peluquero_id')
+                    .eq('id', turnoId)
+                    .single();
+
+                // 3. Enviamos el paquete de datos al servidor (fijamos gramosUsados en 0)
                 const respuesta = await fetch(`${RENDER_URL}/api/finalizar-turno`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -213,17 +238,20 @@ async function cambiarEstado(turnoId, nuevoEstado) {
                         turnoId: turnoId,
                         peluqueroId: turnoInfo.peluquero_id,
                         insumoId: 1, 
-                        gramosUsados: parseInt(gramos) || 0,
-                        precioTotal: parseFloat(precio) || 0
+                        gramosUsados: 0, // Mantenemos esta variable en 0 para que tu backend no falle
+                        precioTotal: parseFloat(precio) || 0 
                     })
                 });
 
                 const resultado = await respuesta.json();
                 alert(resultado.mensaje || "Hubo un problema: " + resultado.error);
+                
             } catch (errorRender) {
                 console.error("Error al conectar con Render:", errorRender);
                 alert("El turno finalizó, pero no pudimos conectar con el servidor para la caja.");
             }
+        } else {
+            alert("Operación cancelada. El turno se marcó como finalizado pero no se registraron los pagos.");
         }
     }
 }
