@@ -95,7 +95,7 @@ async function cargarCalendario() {
                     info.revert(); // Devuelve el turno a su lugar si hay error
                 } else {
                     // Refresca la lista de turnos de hoy en caso de que lo hayas movido al día actual
-                    if (typeof cargarTurnos === 'function') cargarTurnos(); 
+                    if (typeof cargarTurnos === 'function') cargarTurnos();  
                 }
             } else {
                 info.revert(); // Devuelve el turno si el usuario cancela en el cartelito
