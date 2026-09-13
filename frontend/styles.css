@@ -4,9 +4,11 @@
 body {
     font-family: Arial, sans-serif;
     background-color: #f4f7f6;
-    margin: 0 auto;
-    padding: 20px;
-    max-width: 1300px;
+    margin: 0;
+    padding: 20px 24px 30px;
+    width: 100%;
+    max-width: none;
+    box-sizing: border-box;
 }
 
 .header {
@@ -58,16 +60,19 @@ body {
 .contenedor-principal {
     display: flex;
     gap: 20px;
+    width: 100%;
+    align-items: flex-start;
 }
 .columna-izquierda {
-    width: 320px;
-    flex-shrink: 0;
+    width: 340px;
+    flex: 0 0 340px;
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 .calendario-container {
-    flex-grow: 1;
+    flex: 1 1 auto;
+    min-width: 0;
 }
 
 /* =========================================
@@ -440,3 +445,4 @@ body {
     .fc .fc-toolbar-title { font-size: 18px; }
     .fc .fc-button { padding: 6px 10px; font-size: 12px; }
 }
+
