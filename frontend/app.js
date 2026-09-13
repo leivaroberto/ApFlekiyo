@@ -58,13 +58,7 @@ async function iniciarSesion() {
     if (!errorPeluqueria && peluqueriaData) {
         document.getElementById('titulo-peluqueria').innerText = peluqueriaData.nombre;
     }
-    // --------------------------------------------------------------------
-
-    // Ocultamos la pantalla de bloqueo
-    document.getElementById('pantalla-login').style.display = 'none';
-    
-    // Disparamos la carga de datos
-    inicializarApp();
+   
     // Ocultamos la pantalla de bloqueo
     document.getElementById('pantalla-login').style.display = 'none';
     
