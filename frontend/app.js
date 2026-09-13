@@ -7,20 +7,16 @@ const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let peluqueriaIdActual = null;
 let usuarioActual = null;
 
+// Variable global para filtrar los datos del local
+let peluqueriaIdActual = null;
+let usuarioActual = null;
+
 async function iniciarSesion() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
     const mensaje = document.getElementById('login-mensaje');
 
-    if (!email || !password) {
-        mensaje.innerText = "Por favor, ingresa correo y contraseña.";
-        return;
-    }
-
-    mensaje.innerText = "Iniciando sesión...";
-    mensaje.style.color = "#3498db";
-
-    // 1. Validamos las credenciales con Supabase Auth
+    // 1. Iniciar sesión con Supabase Auth
     const { data: authData, error: authError } = await clienteDb.auth.signInWithPassword({
         email: email,
         password: password
@@ -28,10 +24,30 @@ async function iniciarSesion() {
 
     if (authError) {
         mensaje.innerText = "Credenciales incorrectas.";
-        mensaje.style.color = "red";
-        console.error("Error de login:", authError.message);
         return;
     }
+
+    usuarioActual = authData.user;
+
+    // 2. Buscar el ID de la peluquería vinculada a este perfil
+    const { data: perfilData, error: perfilError } = await clienteDb
+        .from('perfiles_usuarios')
+        .select('peluqueria_id')
+        .eq('id', usuarioActual.id)
+        .single();
+
+    if (perfilError || !perfilData) {
+        mensaje.innerText = "Este usuario no tiene un salón asignado.";
+        return;
+    }
+
+    // 3. Guardar el ID y arrancar la app
+    peluqueriaIdActual = perfilData.peluqueria_id;
+    document.getElementById('pantalla-login').style.display = 'none';
+    
+    // Aquí puedes disparar la carga de datos (turnos, clientes, etc.)
+    // cargarTurnos();
+}
 
     usuarioActual = authData.user;
 
