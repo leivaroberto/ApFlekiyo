@@ -205,6 +205,7 @@ async function cargarTurnos() {
     const { data: turnos, error } = await clienteDb
         .from('turnos')
         .select('*, peluqueros(nombre, color_calendario), clientes(nombre, apellido)')
+        .eq('peluqueria_id', peluqueriaIdActual) // <-- NUEVO FILTRO
         .gte('fecha_hora_inicio', hoyInicio.toISOString()) 
         .lte('fecha_hora_inicio', hoyFin.toISOString())    
         .order('fecha_hora_inicio', { ascending: true });
@@ -467,6 +468,7 @@ async function cargarCaja() {
     const { data: registros, error } = await clienteDb
         .from('caja')
         .select('monto_total, monto_comision, peluqueros(nombre)')
+        .eq('peluqueria_id', peluqueriaIdActual) // <-- NUEVO FILTRO
         .gte('fecha_cobro', inicioDelDia.toISOString());
 
     if (!error) renderizarCaja(registros);
@@ -507,6 +509,7 @@ async function cargarCajaMensual() {
     const { data: registros, error } = await clienteDb
         .from('caja')
         .select('monto_total, monto_comision, fecha_cobro, peluqueros(nombre)')
+        .eq('peluqueria_id', peluqueriaIdActual) // <-- NUEVO FILTRO
         .gte('fecha_cobro', primerDiaMes)
         .order('fecha_cobro', { ascending: true });
 
@@ -610,7 +613,7 @@ async function generarReportePDF() {
 
 // --- 7. MÓDULO DE INVENTARIO Y PRODUCTOS ---
 async function cargarInventario() {
-    const { data: insumos, error } = await clienteDb.from('insumos').select('*').order('nombre', { ascending: true });
+    const { data: insumos, error } = await clienteDb.from('insumos').select('*').eq('peluqueria_id', peluqueriaIdActual).order('nombre', { ascending: true });
     if (!error) renderizarInventario(insumos);
 }
 
@@ -731,6 +734,7 @@ async function cargarProximosTurnos() {
     const { data: turnos, error } = await clienteDb
         .from('turnos')
         .select('*, clientes(nombre, apellido, telefono), peluqueros(nombre)')
+        .eq('peluqueria_id', peluqueriaIdActual) // <-- NUEVO FILTRO
         .gte('fecha_hora_inicio', hoy.toISOString())
         .lte('fecha_hora_inicio', dentroDe7Dias.toISOString())
         .order('fecha_hora_inicio', { ascending: true });
@@ -796,7 +800,7 @@ async function cargarPeluquerosAdmin() {
     const contenedor = document.getElementById('lista-peluqueros-admin');
     if(!contenedor) return;
     
-    const { data: peluqueros } = await clienteDb.from('peluqueros').select('*').order('nombre', { ascending: true });
+    const { data: peluqueros } = await clienteDb.from('peluqueros').select('*').eq('peluqueria_id', peluqueriaIdActual).order('nombre', { ascending: true });
     let html = '';
     peluqueros.forEach(p => {
         html += `<div style="border-left: 6px solid ${p.color_calendario}; padding: 10px; margin-bottom: 10px; background: #fff; display:flex; justify-content:space-between; align-items:center; border-radius:5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
