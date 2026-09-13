@@ -5,9 +5,12 @@ const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // --- MÓDULO DE AUTENTICACIÓN (INGRESO DE PELUQUERÍAS) ---
 // Variable global para saber en qué peluquería estamos trabajando
+// Variables globales
 let peluqueriaIdActual = null;
 let usuarioActual = null;
+let calendarioGlobal = null;
 
+// --- MÓDULO DE AUTENTICACIÓN (INGRESO DE PELUQUERÍAS) ---
 async function iniciarSesion() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
@@ -45,10 +48,10 @@ async function iniciarSesion() {
         return;
     } 
 
-    // 3. Guardar el ID y arrancar la app
+    // 3. Guardar el ID para las consultas
     peluqueriaIdActual = perfilData.peluqueria_id;
      
-    // --- NUEVO: Buscar el nombre de la peluquería y cambiar el título ---
+    // 4. Buscar el nombre de la peluquería y cambiar el título
     const { data: peluqueriaData, error: errorPeluqueria } = await clienteDb
         .from('peluquerias')
         .select('nombre')
