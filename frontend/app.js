@@ -97,8 +97,8 @@ async function cargarCalendario() {
 
     const { data: turnos, error } = await clienteDb
         .from('turnos')
-        .select('*, clientes(nombre, apellido), peluqueros(nombre, color_calendario)');
-        .eq('peluqueria_id', peluqueriaIdActual) // <-- AGREGADO
+        .select('*, clientes(nombre, apellido), peluqueros(nombre, color_calendario)')
+        .eq('peluqueria_id', peluqueriaIdActual); // <-- AGREGADO
 
     if (error) {
         console.error("Error al cargar turnos para el calendario:", error);
