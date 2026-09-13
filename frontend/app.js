@@ -47,7 +47,24 @@ async function iniciarSesion() {
 
     // 3. Guardar el ID y arrancar la app
     peluqueriaIdActual = perfilData.peluqueria_id;
+     
+    // --- NUEVO: Buscar el nombre de la peluquería y cambiar el título ---
+    const { data: peluqueriaData, error: errorPeluqueria } = await clienteDb
+        .from('peluquerias')
+        .select('nombre')
+        .eq('id', peluqueriaIdActual)
+        .single();
+
+    if (!errorPeluqueria && peluqueriaData) {
+        document.getElementById('titulo-peluqueria').innerText = peluqueriaData.nombre;
+    }
+    // --------------------------------------------------------------------
+
+    // Ocultamos la pantalla de bloqueo
+    document.getElementById('pantalla-login').style.display = 'none';
     
+    // Disparamos la carga de datos
+    inicializarApp();
     // Ocultamos la pantalla de bloqueo
     document.getElementById('pantalla-login').style.display = 'none';
     
