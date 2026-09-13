@@ -3,7 +3,7 @@ const SUPABASE_URL = 'https://xpufmicxmbhpqocrwgdz.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwdWZtaWN4bWJocHFvY3J3Z2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MzE1OTcsImV4cCI6MjEwMzEwNzU5N30.811oNtrlBbEvNvhxaLlvJBZtqSpU98ZQ9sORRh4EIu8';
 const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // --- MÓDULO DE AUTENTICACIÓN (INGRESO DE PELUQUERÍAS) ---
-// Variable global para saber en qué peluquería estamos trabajando
+// Variable global para filtrar los datos del local
 let peluqueriaIdActual = null;
 let usuarioActual = null;
 
@@ -11,6 +11,14 @@ async function iniciarSesion() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
     const mensaje = document.getElementById('login-mensaje');
+
+    if (!email || !password) {
+        mensaje.innerText = "Por favor, ingresa correo y contraseña.";
+        return;
+    }
+
+    mensaje.innerText = "Iniciando sesión...";
+    mensaje.style.color = "#3498db";
 
     // 1. Iniciar sesión con Supabase Auth
     const { data: authData, error: authError } = await clienteDb.auth.signInWithPassword({
@@ -20,34 +28,14 @@ async function iniciarSesion() {
 
     if (authError) {
         mensaje.innerText = "Credenciales incorrectas.";
+        mensaje.style.color = "red";
+        console.error("Error de login:", authError.message);
         return;
     }
 
     usuarioActual = authData.user;
 
-    // 2. Buscar el ID de la peluquería vinculada a este perfil
-    const { data: perfilData, error: perfilError } = await clienteDb
-        .from('perfiles_usuarios')
-        .select('peluqueria_id')
-        .eq('id', usuarioActual.id)
-        .single();
-
-    if (perfilError || !perfilData) {
-        mensaje.innerText = "Este usuario no tiene un salón asignado.";
-        return;
-    }
-
-    // 3. Guardar el ID y arrancar la app
-    peluqueriaIdActual = perfilData.peluqueria_id;
-    document.getElementById('pantalla-login').style.display = 'none';
-    
-    // Aquí puedes disparar la carga de datos (turnos, clientes, etc.)
-    // cargarTurnos();
-}
-
-    usuarioActual = authData.user;
-
-    // 2. Buscamos a qué peluquería pertenece este usuario
+    // 2. Buscar a qué peluquería pertenece este usuario
     const { data: perfilData, error: perfilError } = await clienteDb
         .from('perfiles_usuarios')
         .select('peluqueria_id')
@@ -61,7 +49,7 @@ async function iniciarSesion() {
         return;
     }
 
-    // 3. Guardamos el ID del salón y arrancamos la app
+    // 3. Guardar el ID del salón y arrancar la app
     peluqueriaIdActual = perfilData.peluqueria_id;
     
     // Ocultamos la pantalla de bloqueo
