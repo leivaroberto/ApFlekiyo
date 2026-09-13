@@ -7,10 +7,6 @@ const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let peluqueriaIdActual = null;
 let usuarioActual = null;
 
-// Variable global para filtrar los datos del local
-let peluqueriaIdActual = null;
-let usuarioActual = null;
-
 async function iniciarSesion() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
@@ -118,6 +114,7 @@ async function cargarCalendario() {
     const { data: turnos, error } = await clienteDb
         .from('turnos')
         .select('*, clientes(nombre, apellido), peluqueros(nombre, color_calendario)');
+        .eq('peluqueria_id', peluqueriaIdActual); // <-- AGREGADO
 
     if (error) {
         console.error("Error al cargar turnos para el calendario:", error);
@@ -365,7 +362,7 @@ async function guardarCliente() {
 
     if (!nombre) return alert("El nombre es obligatorio para crear un cliente.");
 
-    const { error } = await clienteDb.from('clientes').insert([{ nombre: nombre, apellido: apellido, telefono: telefono }]);
+    const { error } = await clienteDb.from('clientes').insert([{ peluqueria_id: peluqueriaIdActual, nombre: nombre, apellido: apellido, telefono: telefono }]);
 
     if (error) {
         mensaje.style.color = 'red';
@@ -396,6 +393,7 @@ async function buscarCliente() {
     const { data: clientes, error: errorClientes } = await clienteDb
         .from('clientes')
         .select('*')
+        .eq('peluqueria_id', peluqueriaIdActual) // <-- AGREGADO
         .or(`nombre.ilike.%${termino}%,apellido.ilike.%${termino}%`)
         .limit(5);
 
@@ -573,6 +571,7 @@ async function generarReportePDF() {
     const { data: registros, error } = await clienteDb
         .from('caja')
         .select('monto_total, monto_comision, fecha_cobro')
+        .eq('peluqueria_id', peluqueriaIdActual) // <-- AGREGADO
         .eq('peluquero_id', peluqueroId)
         .gte('fecha_cobro', fechaInicio)
         .lte('fecha_cobro', fechaFin)
@@ -637,7 +636,7 @@ async function cargarProductosAdmin() {
     const contenedor = document.getElementById('lista-productos-admin');
     if(!contenedor) return;
     
-    const { data: insumos, error } = await clienteDb.from('insumos').select('*').order('nombre', { ascending: true });
+    const { data: insumos, error } = await clienteDb.from('insumos').select('*').eq('peluqueria_id', peluqueriaIdActual).order('nombre', { ascending: true });
     if (error) return contenedor.innerHTML = '<p style="color:red;">Error al cargar.</p>';
     if (insumos.length === 0) return contenedor.innerHTML = '<p>No hay productos.</p>';
 
@@ -670,7 +669,7 @@ async function sumarStock(insumoId, stockActual) {
 async function cargarClientesDropdown() {
     const select = document.getElementById('select-cliente-avanzado');
     if(!select) return;
-    const { data: clientes } = await clienteDb.from('clientes').select('*').order('nombre', { ascending: true });
+    const { data: clientes } = await clienteDb.from('clientes').select('*').eq('peluqueria_id', peluqueriaIdActual).order('nombre', { ascending: true });
     
     if (clientes && clientes.length > 0) {
         let html = '<option value="">-- Selecciona un cliente --</option>';
@@ -682,7 +681,7 @@ async function cargarClientesDropdown() {
 }
 
 async function cargarPeluquerosDropdown() {
-    const { data: peluqueros } = await clienteDb.from('peluqueros').select('*').order('nombre', { ascending: true });
+    const { data: peluqueros } = await clienteDb.from('peluqueros').select('*').eq('peluqueria_id', peluqueriaIdActual).order('nombre', { ascending: true });
     if (!peluqueros) return;
 
     let html = '<option value="">-- Selecciona un profesional --</option>';
@@ -707,6 +706,7 @@ async function agendarTurnoAvanzado() {
     const fechaFin = new Date(fechaInicio.getTime() + (duracionMinutos * 60 * 1000));
 
     const { error } = await clienteDb.from('turnos').insert([{
+        peluqueria_id: peluqueriaIdActual, // <-- AGREGADO
         cliente_id: clienteId, peluquero_id: peluqueroId, descripcion_trabajo: trabajo,
         duracion_minutos: duracionMinutos, fecha_hora_inicio: fechaInicio.toISOString(),
         fecha_hora_fin: fechaFin.toISOString(), estado: 'programado'
@@ -789,7 +789,7 @@ async function guardarPeluquero() {
     
     if (!nombre || !com) return alert("Nombre y comisión obligatorios.");
     
-    await clienteDb.from('peluqueros').insert([{ nombre: nombre, porcentaje_comision: parseFloat(com), color_calendario: color }]);
+    await clienteDb.from('peluqueros').insert([{peluqueria_id: peluqueriaIdActual, nombre: nombre, porcentaje_comision: parseFloat(com), color_calendario: color }]);
     
     document.getElementById('nuevo-peluquero-nombre').value = '';
     cargarPeluquerosAdmin();
@@ -875,6 +875,7 @@ async function monitorearTurnosProximos() {
     const { data: turnos, error } = await clienteDb
         .from('turnos')
         .select('id, fecha_hora_inicio, clientes(nombre, apellido), peluqueros(nombre)')
+        .eq('peluqueria_id', peluqueriaIdActual) // <-- AGREGADO
         .gte('fecha_hora_inicio', hoyInicio.toISOString())
         .lte('fecha_hora_inicio', hoyFin.toISOString())
         .eq('estado', 'programado'); 
@@ -927,6 +928,7 @@ async function generarPDFCajaMensual() {
     const { data: registros, error } = await clienteDb
         .from('caja')
         .select('monto_total, monto_comision, fecha_cobro, peluqueros(nombre)')
+        .eq('peluqueria_id', peluqueriaIdActual)
         .gte('fecha_cobro', primerDiaMes)
         .order('fecha_cobro', { ascending: true });
 
