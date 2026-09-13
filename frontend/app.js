@@ -43,7 +43,7 @@ async function iniciarSesion() {
         mensaje.style.color = "red";
         console.error("Error al buscar perfil:", perfilError);
         return;
-    }
+    } 
 
     // 3. Guardar el ID y arrancar la app
     peluqueriaIdActual = perfilData.peluqueria_id;
