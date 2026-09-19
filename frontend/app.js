@@ -62,6 +62,41 @@ function mostrarLogin() {
     if (mensaje) mensaje.innerText = '';
 }
 
+async function crearPerfilUsuario(authUserId, peluqueriaId) {
+    const payloads = [
+        { id: authUserId, peluqueria_id: peluqueriaId },
+        { user_id: authUserId, peluqueria_id: peluqueriaId },
+        { usuario_id: authUserId, peluqueria_id: peluqueriaId },
+        { auth_user_id: authUserId, peluqueria_id: peluqueriaId }
+    ];
+
+    let ultimoError = null;
+
+    for (const payload of payloads) {
+        const conflictKey = Object.keys(payload).find(key => ['id', 'user_id', 'usuario_id', 'auth_user_id'].includes(key));
+        const { error } = await clienteDb
+            .from('perfiles_usuarios')
+            .upsert([payload], { onConflict: conflictKey || 'id' });
+
+        if (!error) {
+            return null;
+        }
+
+        ultimoError = error;
+
+        const columnasNoExistentes = ['42P01', '42703'];
+        const erroresDeClave = ['23503', '23505'];
+
+        if (columnasNoExistentes.includes(error.code) || erroresDeClave.includes(error.code)) {
+            continue;
+        }
+
+        return error;
+    }
+
+    return ultimoError;
+}
+
 async function registrarUsuario() {
     const nombre = document.getElementById('registro-nombre').value.trim();
     const email = document.getElementById('registro-email').value.trim();
@@ -118,13 +153,11 @@ async function registrarUsuario() {
     }
 
     if (authData?.user) {
-        const { error: perfilError } = await clienteDb
-            .from('perfiles_usuarios')
-            .upsert([{ id: authData.user.id, peluqueria_id: salonData.id }], { onConflict: 'id' });
+        const perfilError = await crearPerfilUsuario(authData.user.id, salonData.id);
 
         if (perfilError) {
             console.error('Error al crear perfil:', perfilError);
-            mensaje.innerText = 'Usuario creado, pero no se pudo asociar al salón. Revisa la tabla y la política RLS de Supabase.';
+            mensaje.innerText = 'Usuario creado, pero no se pudo asociar al salón. Verifica la estructura de la tabla perfiles_usuarios y la relación con auth.users.';
             mensaje.style.color = 'orange';
             return;
         }
