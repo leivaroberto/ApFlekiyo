@@ -9,6 +9,10 @@ let peluqueriaIdActual = null;
 let usuarioActual = null;
 let calendarioGlobal = null;
 
+function haySesionActiva() {
+    return !!usuarioActual && !!peluqueriaIdActual;
+}
+
 function cerrarSesion() {
     peluqueriaIdActual = null;
     usuarioActual = null;
@@ -207,6 +211,8 @@ async function iniciarSesion() {
 
 // Envolvemos las funciones de arranque para que esperen al login
 function inicializarApp() {
+    if (!haySesionActiva()) return;
+
     // Aquí puedes agregar todas tus funciones de arranque
     // --- 11. ARRANQUE AUTOMÁTICO ---
     cargarPeluquerosDropdown();
@@ -240,6 +246,8 @@ function abrirSolapa(idSolapa, evento) {
 
 // --- 3. MÓDULO DE CALENDARIO GENERAL (SOLAPA 8) ---
 async function cargarCalendario() {
+    if (!haySesionActiva()) return;
+
     const calendarEl = document.getElementById('calendario-full');
     if (!calendarEl) return;
 
@@ -323,6 +331,8 @@ async function cargarCalendario() {
 }
 
 async function cargarTurnos() {
+    if (!haySesionActiva()) return;
+
     // 1. Calculamos el inicio y el fin exacto del día de hoy
     const hoyInicio = new Date();
     hoyInicio.setHours(0, 0, 0, 0);
@@ -487,6 +497,8 @@ async function borrarTurno(id) {
 
 // --- 5. MÓDULO DE CLIENTES (Buscador y Creación) ---
 async function guardarCliente() {
+    if (!haySesionActiva()) return;
+
     const nombre = document.getElementById('nuevo-cliente-nombre').value.trim();
     const apellido = document.getElementById('nuevo-cliente-apellido').value.trim();
     const telefono = document.getElementById('nuevo-cliente-telefono').value.trim();
@@ -511,6 +523,8 @@ async function guardarCliente() {
 }
 
 async function buscarCliente() {
+    if (!haySesionActiva()) return;
+
     const termino = document.getElementById('buscador-cliente').value.trim();
     const contenedor = document.getElementById('resultado-busqueda');
 
@@ -592,6 +606,8 @@ async function buscarCliente() {
 
 // --- 6. MÓDULO DE CAJA Y REPORTE PDF ---
 async function cargarCaja() {
+    if (!haySesionActiva()) return;
+
     const inicioDelDia = new Date();
     inicioDelDia.setHours(0, 0, 0, 0);
 
@@ -626,6 +642,8 @@ function renderizarCaja(registros) {
 }
 
 async function cargarCajaMensual() {
+    if (!haySesionActiva()) return;
+
     const contenedorComisiones = document.getElementById('lista-comisiones-mes');
     const textoTotal = document.getElementById('total-mes-ingresos');
     const tablaDetalle = document.getElementById('tabla-detalle-mes');
@@ -744,6 +762,8 @@ async function generarReportePDF() {
 
 // --- 7. MÓDULO DE INVENTARIO Y PRODUCTOS ---
 async function cargarInventario() {
+    if (!haySesionActiva()) return;
+
     const { data: insumos, error } = await clienteDb.from('insumos').select('*').eq('peluqueria_id', peluqueriaIdActual).order('nombre', { ascending: true });
     if (!error) renderizarInventario(insumos);
 }
@@ -765,6 +785,8 @@ function renderizarInventario(insumos) {
 }
 
 async function cargarProductosAdmin() {
+    if (!haySesionActiva()) return;
+
     const contenedor = document.getElementById('lista-productos-admin');
     if(!contenedor) return;
     
@@ -790,6 +812,8 @@ async function cargarProductosAdmin() {
 }
 
 async function sumarStock(insumoId, stockActual) {
+    if (!haySesionActiva()) return;
+
     const cantidad = parseInt(document.getElementById(`sumar-stock-${insumoId}`).value);
     if (!cantidad || cantidad <= 0 || isNaN(cantidad)) return alert("Cantidad inválida.");
     
@@ -799,6 +823,8 @@ async function sumarStock(insumoId, stockActual) {
 
 // --- 8. MÓDULO RESERVA AVANZADA Y PRÓXIMOS TURNOS ---
 async function cargarClientesDropdown() {
+    if (!haySesionActiva()) return;
+
     const select = document.getElementById('select-cliente-avanzado');
     if(!select) return;
     const { data: clientes } = await clienteDb.from('clientes').select('*').eq('peluqueria_id', peluqueriaIdActual).order('nombre', { ascending: true });
@@ -813,6 +839,8 @@ async function cargarClientesDropdown() {
 }
 
 async function cargarPeluquerosDropdown() {
+    if (!haySesionActiva()) return;
+
     const { data: peluqueros } = await clienteDb.from('peluqueros').select('*').eq('peluqueria_id', peluqueriaIdActual).order('nombre', { ascending: true });
     if (!peluqueros) return;
 
@@ -825,6 +853,8 @@ async function cargarPeluquerosDropdown() {
 }
 
 async function agendarTurnoAvanzado() {
+    if (!haySesionActiva()) return;
+
     const clienteId = document.getElementById('select-cliente-avanzado').value;
     const peluqueroId = document.getElementById('select-peluquero-avanzado').value;
     const trabajo = document.getElementById('input-trabajo')?.value.trim() || 'Servicio de Salón';
@@ -856,6 +886,8 @@ async function agendarTurnoAvanzado() {
 }
 
 async function cargarProximosTurnos() {
+    if (!haySesionActiva()) return;
+
     const contenedor = document.getElementById('lista-proximos-turnos');
     contenedor.innerHTML = '<p>Buscando la agenda...</p>';
 
@@ -915,6 +947,8 @@ async function cargarProximosTurnos() {
 
 // --- 9. MÓDULO PROFESIONALES (ADMIN) ---
 async function guardarPeluquero() {
+    if (!haySesionActiva()) return;
+
     const nombre = document.getElementById('nuevo-peluquero-nombre').value.trim();
     const com = document.getElementById('nuevo-peluquero-comision').value.trim();
     const color = document.getElementById('nuevo-peluquero-color').value;
@@ -929,6 +963,8 @@ async function guardarPeluquero() {
 }
 
 async function cargarPeluquerosAdmin() {
+    if (!haySesionActiva()) return;
+
     const contenedor = document.getElementById('lista-peluqueros-admin');
     if(!contenedor) return;
     
@@ -1000,6 +1036,8 @@ function activarAlarmas() {
     });
 }
 async function monitorearTurnosProximos() {
+    if (!haySesionActiva()) return;
+
     const hoyInicio = new Date();
     const hoyFin = new Date();
     hoyFin.setHours(23, 59, 59, 999);
@@ -1125,6 +1163,10 @@ async function generarPDFCajaMensual() {
 }
 // Inicializar las alarmas (Asegúrate de que esto quede al final del todo)
 solicitarPermisoNotificaciones();
-setInterval(monitorearTurnosProximos, 60000); // Revisa cada 60 segundos
+setInterval(() => {
+    if (haySesionActiva()) {
+        monitorearTurnosProximos();
+    }
+}, 60000); // Revisa cada 60 segundos
 
 
