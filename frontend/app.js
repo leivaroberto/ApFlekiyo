@@ -63,38 +63,11 @@ function mostrarLogin() {
 }
 
 async function crearPerfilUsuario(authUserId, peluqueriaId) {
-    const payloads = [
-        { id: authUserId, peluqueria_id: peluqueriaId },
-        { user_id: authUserId, peluqueria_id: peluqueriaId },
-        { usuario_id: authUserId, peluqueria_id: peluqueriaId },
-        { auth_user_id: authUserId, peluqueria_id: peluqueriaId }
-    ];
+    const { error } = await clienteDb
+        .from('perfiles_usuarios')
+        .upsert({ id: authUserId, peluqueria_id: peluqueriaId }, { onConflict: 'id' });
 
-    let ultimoError = null;
-
-    for (const payload of payloads) {
-        const conflictKey = Object.keys(payload).find(key => ['id', 'user_id', 'usuario_id', 'auth_user_id'].includes(key));
-        const { error } = await clienteDb
-            .from('perfiles_usuarios')
-            .upsert([payload], { onConflict: conflictKey || 'id' });
-
-        if (!error) {
-            return null;
-        }
-
-        ultimoError = error;
-
-        const columnasNoExistentes = ['42P01', '42703'];
-        const erroresDeClave = ['23503', '23505'];
-
-        if (columnasNoExistentes.includes(error.code) || erroresDeClave.includes(error.code)) {
-            continue;
-        }
-
-        return error;
-    }
-
-    return ultimoError;
+    return error;
 }
 
 async function registrarUsuario() {
@@ -141,7 +114,8 @@ async function registrarUsuario() {
         password,
         options: {
             data: {
-                nombre_completo: nombre
+                nombre_completo: nombre,
+                peluqueria_id: salonData.id
             }
         }
     });
@@ -152,15 +126,20 @@ async function registrarUsuario() {
         return;
     }
 
-    if (authData?.user) {
+    if (authData?.user && authData?.session) {
         const perfilError = await crearPerfilUsuario(authData.user.id, salonData.id);
 
         if (perfilError) {
             console.error('Error al crear perfil:', perfilError);
-            mensaje.innerText = 'Usuario creado, pero no se pudo asociar al salón. Verifica la estructura de la tabla perfiles_usuarios y la relación con auth.users.';
+            mensaje.innerText = `Usuario creado, pero no se pudo asociar al salón: ${perfilError.message}`;
             mensaje.style.color = 'orange';
             return;
         }
+    } else if (authData?.user) {
+        mensaje.innerText = 'Usuario creado. Confirma tu correo para completar el acceso.';
+        mensaje.style.color = 'green';
+        mostrarLogin();
+        return;
     }
 
     mensaje.innerText = 'Usuario y salón creados correctamente. Ya podés iniciar sesión.';
@@ -197,32 +176,14 @@ async function iniciarSesion() {
 
     usuarioActual = authData.user;
 
-    let perfilData = null;
-    let perfilError = null;
-    const camposPerfil = ['id', 'user_id', 'usuario_id', 'auth_user_id'];
-
-    for (const campo of camposPerfil) {
-        const { data, error } = await clienteDb
-            .from('perfiles_usuarios')
-            .select('peluqueria_id')
-            .eq(campo, usuarioActual.id)
-            .maybeSingle();
-
-        if (error) {
-            if (error.code !== 'PGRST116' && error.code !== '42P01') {
-                perfilError = error;
-            }
-            continue;
-        }
-
-        if (data) {
-            perfilData = data;
-            break;
-        }
-    }
+    const { data: perfilData, error: perfilError } = await clienteDb
+        .from('perfiles_usuarios')
+        .select('peluqueria_id')
+        .eq('id', usuarioActual.id)
+        .maybeSingle();
 
     if (!perfilData || !perfilData.peluqueria_id) {
-        mensaje.innerText = "Este usuario no tiene un salón asignado o la relación no está configurada.";
+        mensaje.innerText = perfilError?.message || "Este usuario no tiene un salón asignado o la relación no está configurada.";
         mensaje.style.color = "red";
         console.error("Error al buscar perfil:", perfilError);
         return;
