@@ -74,6 +74,11 @@ async function crearPerfilUsuario(authUserId, peluqueriaId) {
     return error;
 }
 
+// Reemplaza la función registrarUsuario() completa de app.js (líneas 77-160).
+// Ya no crea el salón ni el perfil desde el navegador: lo hace el trigger
+// public.handle_new_user() de fix_registro.sql usando los datos de options.data.
+// La función crearPerfilUsuario() ya no se usa y se puede borrar.
+
 async function registrarUsuario() {
     const nombre = document.getElementById('registro-nombre').value.trim();
     const email = document.getElementById('registro-email').value.trim();
@@ -81,6 +86,7 @@ async function registrarUsuario() {
     const confirmPassword = document.getElementById('registro-confirm-password').value;
     const nombreSalon = document.getElementById('registro-peluqueria-nombre').value.trim();
     const mensaje = document.getElementById('login-mensaje');
+    const boton = document.querySelector('#registro-form .login-button');
 
     if (!nombre || !email || !password || !confirmPassword || !nombreSalon) {
         mensaje.innerText = 'Completa todos los campos, incluido el nombre del salón.';
@@ -100,65 +106,55 @@ async function registrarUsuario() {
         return;
     }
 
-    const { data: salonData, error: salonError } = await clienteDb
-        .from('peluquerias')
-        .insert([{ nombre: nombreSalon }])
-        .select()
-        .single();
+    // Evita doble clic (antes cada clic podía crear un salón nuevo)
+    if (boton) boton.disabled = true;
 
-    if (salonError || !salonData) {
-        console.error('Error al crear salón:', salonError);
-        mensaje.innerText = 'No se pudo crear el salón.';
-        mensaje.style.color = 'red';
-        return;
-    }
-
-    const { data: authData, error: authError } = await clienteDb.auth.signUp({
-        email,
-        password,
-        options: {
-            data: {
-                nombre_completo: nombre,
-                peluqueria_id: salonData.id
+    try {
+        const { data: authData, error: authError } = await clienteDb.auth.signUp({
+            email,
+            password,
+            options: {
+                data: {
+                    nombre_completo: nombre,
+                    nombre_salon: nombreSalon
+                }
             }
-        }
-    });
+        });
 
-    if (authError) {
-  console.error('authError completo:', authError);
-  console.error('message:', authError.message);
-  console.error('status:', authError.status);
-  mensaje.innerText = authError.message || 'No se pudo crear el usuario.';
-  mensaje.style.color = 'red';
-  return;
-}
-
-    if (authData?.user && authData?.session) {
-        const perfilError = await crearPerfilUsuario(authData.user.id, salonData.id);
-
-        if (perfilError) {
-            console.error('Error al crear perfil:', perfilError);
-            mensaje.innerText = `Usuario creado, pero no se pudo asociar al salón: ${perfilError.message}`;
-            mensaje.style.color = 'orange';
+        if (authError) {
+            console.error('Error en signUp:', authError);
+            mensaje.innerText = authError.message || 'No se pudo crear el usuario.';
+            mensaje.style.color = 'red';
             return;
         }
-    } else if (authData?.user) {
-        mensaje.innerText = 'Usuario creado. Confirma tu correo para completar el acceso.';
+
+        // Con la confirmación de correo desactivada, signUp deja una sesión abierta.
+        // Se cierra para que el flujo sea siempre: registrarse -> iniciar sesión.
+        if (authData?.session) {
+            await clienteDb.auth.signOut();
+        }
+
+        if (authData?.session) {
+            mensaje.innerText = 'Usuario y salón creados correctamente. Ya podés iniciar sesión.';
+        } else {
+            mensaje.innerText = 'Usuario creado. Confirma tu correo para poder ingresar.';
+        }
         mensaje.style.color = 'green';
+
+        document.getElementById('registro-nombre').value = '';
+        document.getElementById('registro-email').value = '';
+        document.getElementById('registro-password').value = '';
+        document.getElementById('registro-confirm-password').value = '';
+        document.getElementById('registro-peluqueria-nombre').value = '';
+
+        // mostrarLogin() limpia el mensaje, así que se restaura después
+        const texto = mensaje.innerText;
         mostrarLogin();
-        return;
+        mensaje.innerText = texto;
+    } finally {
+        if (boton) boton.disabled = false;
     }
-
-    mensaje.innerText = 'Usuario y salón creados correctamente. Ya podés iniciar sesión.';
-    mensaje.style.color = 'green';
-    document.getElementById('registro-nombre').value = '';
-    document.getElementById('registro-email').value = '';
-    document.getElementById('registro-password').value = '';
-    document.getElementById('registro-confirm-password').value = '';
-    document.getElementById('registro-peluqueria-nombre').value = '';
-    mostrarLogin();
 }
-
 async function iniciarSesion() {
     const email = document.getElementById('login-email').value.trim();
     const password = document.getElementById('login-password').value;
