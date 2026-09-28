@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Estilistas - AppFlekiyo - Sistema de Gestión</title>
     <link rel="stylesheet" href="styles.css">
     
@@ -32,15 +32,34 @@
                 <span class="login-icon"><i data-lucide="scissors" class="app-icon" aria-hidden="true"></i></span>
                 <h2>AppFlekiyo</h2>
             </div>
-            <p class="login-subtitle">Inicia sesión en tu salón</p>
+            <p id="login-subtitle" class="login-subtitle">Inicia sesión en tu salón</p>
 
             <div id="login-formulario" class="login-formulario">
                 <input type="email" id="login-email" class="login-input" placeholder="Correo electrónico">
                 <div class="password-field">
                     <input type="password" id="login-password" class="login-input" placeholder="Contraseña">
-                    <button type="button" class="password-toggle" data-target="login-password" aria-label="Mostrar contraseña">Mostrar</button>
+                    <button type="button" class="password-toggle" data-target="login-password" aria-label="Mostrar contraseña" title="Mostrar contraseña"><i data-lucide="eye" class="app-icon" aria-hidden="true"></i></button>
                 </div>
                 <button onclick="iniciarSesion()" class="login-button">Ingresar</button>
+                <button type="button" class="login-link" onclick="mostrarRecuperacion()">¿Olvidaste tu contraseña?</button>
+            </div>
+
+            <div id="recovery-form" class="recovery-form">
+                <input type="email" id="recovery-email" class="login-input" placeholder="Correo electrónico" autocomplete="email">
+                <button type="button" class="login-button" onclick="enviarEnlaceRecuperacion()">Enviar enlace de recuperación</button>
+                <button type="button" class="login-link" onclick="mostrarLogin()">Volver al inicio de sesión</button>
+            </div>
+
+            <div id="password-reset-form" class="password-reset-form">
+                <div class="password-field">
+                    <input type="password" id="nueva-password" class="login-input" placeholder="Nueva contraseña" autocomplete="new-password">
+                    <button type="button" class="password-toggle" data-target="nueva-password" aria-label="Mostrar contraseña" title="Mostrar contraseña"><i data-lucide="eye" class="app-icon" aria-hidden="true"></i></button>
+                </div>
+                <div class="password-field">
+                    <input type="password" id="confirmar-nueva-password" class="login-input" placeholder="Repetir nueva contraseña" autocomplete="new-password">
+                    <button type="button" class="password-toggle" data-target="confirmar-nueva-password" aria-label="Mostrar contraseña" title="Mostrar contraseña"><i data-lucide="eye" class="app-icon" aria-hidden="true"></i></button>
+                </div>
+                <button type="button" class="login-button" onclick="guardarNuevaPassword()">Guardar contraseña</button>
             </div>
 
             <div id="registro-form" class="registro-form">
@@ -48,11 +67,11 @@
                 <input type="email" id="registro-email" class="login-input" placeholder="Correo electrónico">
                 <div class="password-field">
                     <input type="password" id="registro-password" class="login-input" placeholder="Contraseña">
-                    <button type="button" class="password-toggle" data-target="registro-password" aria-label="Mostrar contraseña">Mostrar</button>
+                    <button type="button" class="password-toggle" data-target="registro-password" aria-label="Mostrar contraseña" title="Mostrar contraseña"><i data-lucide="eye" class="app-icon" aria-hidden="true"></i></button>
                 </div>
                 <div class="password-field">
                     <input type="password" id="registro-confirm-password" class="login-input" placeholder="Repetir contraseña">
-                    <button type="button" class="password-toggle" data-target="registro-confirm-password" aria-label="Mostrar contraseña">Mostrar</button>
+                    <button type="button" class="password-toggle" data-target="registro-confirm-password" aria-label="Mostrar contraseña" title="Mostrar contraseña"><i data-lucide="eye" class="app-icon" aria-hidden="true"></i></button>
                 </div>
                 <input type="text" id="registro-peluqueria-nombre" class="login-input" placeholder="Nombre del salón">
                 <button onclick="registrarUsuario()" class="login-button secondary">Crear usuario</button>

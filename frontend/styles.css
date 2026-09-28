@@ -35,6 +35,65 @@ button, input, select, textarea {
     font: inherit;
 }
 
+.app-icon {
+    width: 1em;
+    height: 1em;
+    stroke-width: 2;
+    vertical-align: -0.15em;
+    flex: none;
+}
+
+.app-icon[data-lucide^="calendar"],
+.app-icon[data-lucide="clock"],
+.app-icon[data-lucide="refresh-cw"],
+.app-icon[data-lucide="search"] {
+    color: #3978c5;
+}
+
+.app-icon[data-lucide="users"],
+.app-icon[data-lucide="user-round"],
+.app-icon[data-lucide="map-pin"] {
+    color: #25877d;
+}
+
+.app-icon[data-lucide="scissors"] {
+    color: #d05b83;
+}
+
+.app-icon[data-lucide="package"],
+.app-icon[data-lucide="triangle-alert"],
+.app-icon[data-lucide="bell"],
+.app-icon[data-lucide="pencil"] {
+    color: #c47a24;
+}
+
+.app-icon[data-lucide="wallet"],
+.app-icon[data-lucide="circle-check"],
+.app-icon[data-lucide="plus"],
+.app-icon[data-lucide="message-circle"] {
+    color: #27845a;
+}
+
+.app-icon[data-lucide="circle-x"],
+.app-icon[data-lucide="x"],
+.app-icon[data-lucide="minus"] {
+    color: #c44747;
+}
+
+.app-icon[data-lucide="clipboard-list"],
+.app-icon[data-lucide="file-text"],
+.app-icon[data-lucide="download"] {
+    color: #5b7186;
+}
+
+.btn-solapa.activo .app-icon,
+.btn-accion .app-icon,
+.btn-accion-buscar .app-icon,
+.grilla-admin-productos button .app-icon,
+.turno-card button .app-icon {
+    color: inherit;
+}
+
 .header {
     background: linear-gradient(135deg, #24384d 0%, #2e4a63 100%);
     color: white;
@@ -111,8 +170,12 @@ button, input, select, textarea {
 }
 
 .login-formulario,
-.registro-form {
-    display: block;
+.registro-form,
+.recovery-form,
+.password-reset-form {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
 .login-brand {
@@ -152,12 +215,52 @@ button, input, select, textarea {
     width: 100%;
     box-sizing: border-box;
     padding: 14px 16px;
-    margin-bottom: 16px;
+    margin: 0 0 16px;
     border: 1px solid #d9e1eb;
     border-radius: 12px;
     background: #f8fafc;
     font-size: 1rem;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.password-field {
+    position: relative;
+    width: 100%;
+    margin-bottom: 16px;
+}
+
+.password-field .login-input {
+    padding-right: 56px;
+    margin-bottom: 0;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: #2c7be5;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 8px;
+    transition: background 0.2s ease, color 0.2s ease;
+    z-index: 1;
+}
+
+.password-toggle.active {
+    color: #0f172a;
+    background: rgba(44, 123, 229, 0.08);
+}
+
+.password-toggle:hover {
+    background: rgba(44, 123, 229, 0.08);
 }
 
 .login-input:focus {
@@ -178,6 +281,7 @@ button, input, select, textarea {
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
     box-shadow: 0 12px 24px rgba(44, 123, 229, 0.25);
+    margin-top: 4px;
 }
 
 .login-button.secondary {
@@ -216,8 +320,19 @@ button, input, select, textarea {
     display: none;
 }
 
-.registro-form.visible {
-    display: block;
+.recovery-form,
+.password-reset-form {
+    display: none;
+}
+
+.registro-form.visible,
+.recovery-form.visible,
+.password-reset-form.visible {
+    display: flex;
+}
+
+.login-actions.hidden {
+    display: none;
 }
 
 .login-formulario.hidden,
@@ -269,6 +384,7 @@ button, input, select, textarea {
 .contenido-solapa {
     display: none;
     padding: 20px;
+    min-width: 0;
     background: transparent;
 }
 .contenido-solapa.activa {
@@ -306,6 +422,7 @@ button, input, select, textarea {
     box-shadow: var(--shadow);
     width: 100%;
     border: 1px solid var(--border);
+    min-width: 0;
 }
 
 .btn-accion, .btn-agendar, .btn-sumar, .btn-accion-buscar {
@@ -444,6 +561,7 @@ button, input, select, textarea {
 }
 .detalle-comisiones {
     flex-grow: 1;
+    min-width: 0;
     border-top: 5px solid #3498db; 
 }
 .numero-grande {
@@ -520,6 +638,9 @@ button, input, select, textarea {
     font-size: 14px;
 }
 .grupo-input select, .grupo-input input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     padding: 12px 14px;
     border: 1px solid var(--border);
     border-radius: 10px;
@@ -596,6 +717,11 @@ button, input, select, textarea {
     gap: 10px;
     margin-top: 15px;
 }
+
+#lista-productos-admin .tabla-inventario {
+    font-size: 14px;
+}
+
 .producto-admin-card {
     display: flex;
     justify-content: space-between;
@@ -632,8 +758,54 @@ button, input, select, textarea {
    11. OPTIMIZACIÓN CELULARES UNIFICADA (Responsive)
    ========================================= */
 @media (max-width: 768px) {
+    body {
+        padding: 12px max(6px, env(safe-area-inset-right)) 24px max(6px, env(safe-area-inset-left));
+    }
+
+    .header {
+        padding: 20px 14px;
+        border-radius: 12px;
+    }
+
     .header-inner {
         padding-right: 88px;
+    }
+
+    .header h1 {
+        font-size: clamp(1.45rem, 7vw, 2rem);
+        line-height: 1.15;
+    }
+
+    .header p {
+        font-size: 0.9rem;
+    }
+
+    .menu-solapas {
+        gap: 8px;
+        padding: 10px;
+        margin-bottom: 12px;
+        border-radius: 10px;
+        scrollbar-width: thin;
+        overscroll-behavior-x: contain;
+    }
+
+    .btn-solapa {
+        padding: 10px 13px;
+        font-size: 0.88rem;
+    }
+
+    .contenido-solapa {
+        padding: 10px 0;
+        overflow: hidden;
+    }
+
+    .contenido-solapa > h2 {
+        font-size: 1.35rem;
+        line-height: 1.25;
+    }
+
+    .contenido-solapa > p {
+        line-height: 1.45;
     }
 
     .btn-salir {
@@ -656,6 +828,7 @@ button, input, select, textarea {
     /* Paneles y columnas ocupan el 100% del ancho */
     .columna-izquierda, 
     .panel-formulario, 
+    .panel-buscador,
     .total-ingresos,
     .panel-formulario-avanzado,
     .calendario-wrapper,
@@ -668,6 +841,20 @@ button, input, select, textarea {
     /* Espaciado extra para el calendario en móvil */
     .calendario-wrapper {
         padding: 10px;
+    }
+
+    .panel-control, .panel-panol, .panel-caja, .panel-alarmas,
+    .panel-formulario, .panel-buscador, .panel-finanzas,
+    .panel-formulario-avanzado {
+        padding: 15px;
+    }
+
+    .busqueda-grupo {
+        flex-direction: column;
+    }
+
+    .busqueda-grupo .btn-accion-buscar {
+        width: 100%;
     }
 
     /* Tarjetas y filas internas apiladas */
@@ -686,6 +873,10 @@ button, input, select, textarea {
     .form-sumar-stock { width: 100%; }
     .form-sumar-stock input { flex-grow: 1; }
 
+    .producto-admin-card {
+        width: 100%;
+    }
+
     /* Ajustes específicos para FullCalendar en celular */
     #calendario-full { font-size: 11px; }
     
@@ -702,5 +893,38 @@ button, input, select, textarea {
     }
     .fc .fc-toolbar-title { font-size: 18px; }
     .fc .fc-button { padding: 6px 10px; font-size: 12px; }
+}
+
+@media (max-width: 480px) {
+    body {
+        padding: 8px max(4px, env(safe-area-inset-right)) 18px max(4px, env(safe-area-inset-left));
+    }
+
+    .header-inner {
+        padding-right: 0;
+        padding-top: 38px;
+    }
+
+    .btn-salir {
+        top: 0;
+        right: 0;
+    }
+
+    .login-card {
+        padding: 26px 18px 20px;
+    }
+
+    .reporte-fechas {
+        gap: 0;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 16px;
+    }
+
+    .fc .fc-button {
+        padding: 5px 7px;
+        font-size: 11px;
+    }
 }
 
