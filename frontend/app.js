@@ -34,7 +34,7 @@ function cerrarSesion() {
 
     const titulo = document.getElementById('titulo-peluqueria');
     if (titulo) {
-        titulo.innerText = 'VERONA Estilistas';
+        titulo.innerText = 'Peluqueria / Estilistas';
     }
 }
 
