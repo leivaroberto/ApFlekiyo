@@ -916,7 +916,16 @@ async function generarReportePDF() {
 
     if (!peluqueroId || !fechaDesdeStr || !fechaHastaStr) return alert("Selecciona un profesional y las fechas.");
 
-    const { data: peluqueroInfo } = await clienteDb.from('peluqueros').select('nombre, porcentaje_comision').eq('id', peluqueroId).single();
+    const { data: peluqueroInfo, error: peluqueroError } = await clienteDb
+        .from('peluqueros')
+        .select('nombre, telefono, porcentaje_comision')
+        .eq('id', peluqueroId)
+        .single();
+    if (peluqueroError || !peluqueroInfo) {
+        console.error('Error al cargar los datos del profesional:', peluqueroError);
+        return alert("No se pudieron cargar los datos del profesional.");
+    }
+
     const fechaInicio = new Date(fechaDesdeStr + 'T00:00:00').toISOString();
     const fechaFin = new Date(fechaHastaStr + 'T23:59:59').toISOString();
 
@@ -933,12 +942,15 @@ async function generarReportePDF() {
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+    const nombreSalon = document.getElementById('titulo-peluqueria')?.innerText.trim() || 'Peluqueria / Estilistas';
 
     doc.setFontSize(18);
-    doc.text("VERONA Estilistas - Reporte de Liquidación", 14, 20);
+    doc.text(`${nombreSalon} - Reporte de Liquidación`, 14, 20);
     doc.setFontSize(12);
-    doc.text(`Profesional: ${peluqueroInfo.nombre} (${peluqueroInfo.porcentaje_comision}% Comisión)`, 14, 28);
-    doc.text(`Período: ${fechaDesdeStr} al ${fechaHastaStr}`, 14, 34);
+    doc.text(`Profesional: ${peluqueroInfo.nombre}`, 14, 28);
+    doc.text(`Teléfono: ${peluqueroInfo.telefono || 'No informado'}`, 14, 34);
+    doc.text(`Comisión: ${peluqueroInfo.porcentaje_comision}%`, 14, 40);
+    doc.text(`Período: ${fechaDesdeStr} al ${fechaHastaStr}`, 14, 46);
 
     let cuerpoTabla = [];
     let acumuladoFacturado = 0;
@@ -955,13 +967,20 @@ async function generarReportePDF() {
         cuerpoTabla.push([fechaFormateada, 'Registrado en Caja', 'Servicio de Peluquería', `$${monto.toLocaleString('es-AR')}`, `$${comision.toLocaleString('es-AR')}`]);
     });
 
-    doc.autoTable({ startY: 42, head: [['Fecha y Hora', 'Cliente', 'Detalle', 'Precio Cobrado', 'Comisión']], body: cuerpoTabla });
+    doc.autoTable({ startY: 54, head: [['Fecha y Hora', 'Cliente', 'Detalle', 'Precio Cobrado', 'Comisión']], body: cuerpoTabla });
     const finalY = doc.lastAutoTable.finalY + 10;
     doc.text(`Total Facturado: $${acumuladoFacturado.toLocaleString('es-AR')}`, 14, finalY);
     doc.text(`Total Comisión a Pagar: $${acumuladoComision.toLocaleString('es-AR')}`, 14, finalY + 7);
     doc.save(`Liquidacion_${peluqueroInfo.nombre.replace(/\s+/g, '_')}_${fechaDesdeStr}.pdf`);
 }
 // --- 7. MÓDULO DE INVENTARIO Y PRODUCTOS ---
+let productosOrdenAscendente = true;
+
+function alternarOrdenProductos() {
+    productosOrdenAscendente = !productosOrdenAscendente;
+    cargarProductosAdmin();
+}
+
 async function cargarInventario() {
     if (!haySesionActiva()) return;
 
@@ -1042,8 +1061,7 @@ async function cargarProductosAdmin() {
     const { data: insumos, error } = await clienteDb
         .from('insumos')
         .select('*')
-        .eq('peluqueria_id', peluqueriaIdActual)
-        .order('nombre', { ascending: true });
+        .eq('peluqueria_id', peluqueriaIdActual);
         
     if (error) return contenedor.innerHTML = '<p style="color:red;">Error al cargar el inventario.</p>';
     if (insumos.length === 0) {
@@ -1060,7 +1078,11 @@ async function cargarProductosAdmin() {
         <table class="tabla-inventario" style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
             <thead style="background: #2c3e50; color: white; text-align: left;">
                 <tr>
-                    <th style="padding: 15px; border-bottom: 2px solid #ddd;">Producto</th>
+                    <th aria-sort="${productosOrdenAscendente ? 'ascending' : 'descending'}" style="padding: 15px; border-bottom: 2px solid #ddd;">
+                        <button type="button" onclick="alternarOrdenProductos()" title="Cambiar orden alfabético" style="background: none; color: inherit; border: 0; padding: 0; font: inherit; font-weight: bold; cursor: pointer;">
+                            Producto ${productosOrdenAscendente ? 'A-Z' : 'Z-A'}
+                        </button>
+                    </th>
                     <th style="padding: 15px; border-bottom: 2px solid #ddd;">Stock Actual</th>
                     <th style="padding: 15px; border-bottom: 2px solid #ddd; text-align: center;">Ajuste Rápido</th>
                 </tr>
@@ -1068,7 +1090,10 @@ async function cargarProductosAdmin() {
             <tbody>
     `;
 
-    insumos.forEach(insumo => {
+    const insumosOrdenados = [...insumos].sort((a, b) =>
+        a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }) * (productosOrdenAscendente ? 1 : -1)
+    );
+    for (const insumo of insumosOrdenados) {
         const unidad = insumo.unidad_medida || 'g'; 
         const umbralAlerta = (unidad === 'u') ? 10 : 100;
         const stockBajo = insumo.stock_gramos <= umbralAlerta;
@@ -1099,7 +1124,7 @@ async function cargarProductosAdmin() {
                 </td>
             </tr>
         `;
-    });
+    }
 
     html += `</tbody></table>`;
     contenedor.innerHTML = html;
@@ -1193,6 +1218,76 @@ async function cargarPeluquerosDropdown() {
     if(document.getElementById('select-peluquero-avanzado')) document.getElementById('select-peluquero-avanzado').innerHTML = html;
     if(document.getElementById('select-peluquero')) document.getElementById('select-peluquero').innerHTML = html;
     if(document.getElementById('select-peluquero-reporte')) document.getElementById('select-peluquero-reporte').innerHTML = html;
+}
+
+async function crearTurnoNuevo() {
+    if (!haySesionActiva()) return;
+
+    const nombreCompleto = document.getElementById('input-cliente').value.trim();
+    const peluqueroId = document.getElementById('select-peluquero').value;
+    const mensaje = document.getElementById('mensaje-turno-rapido');
+    const boton = document.querySelector('.btn-agendar');
+
+    if (!nombreCompleto || !peluqueroId) {
+        mensaje.innerText = 'Ingresa el nombre del cliente y selecciona un profesional.';
+        mensaje.style.color = 'red';
+        return;
+    }
+
+    const [nombre, ...apellidoPartes] = nombreCompleto.split(/\s+/);
+    const apellido = apellidoPartes.join(' ');
+    if (boton) boton.disabled = true;
+
+    try {
+        const { data: clienteExistente, error: errorBusqueda } = await clienteDb
+            .from('clientes')
+            .select('id')
+            .eq('peluqueria_id', peluqueriaIdActual)
+            .ilike('nombre', nombre)
+            .ilike('apellido', apellido)
+            .limit(1)
+            .maybeSingle();
+
+        if (errorBusqueda) throw errorBusqueda;
+
+        let clienteId = clienteExistente?.id;
+        if (!clienteId) {
+            const { data: nuevoCliente, error: errorCliente } = await clienteDb
+                .from('clientes')
+                .insert([{ peluqueria_id: peluqueriaIdActual, nombre, apellido, telefono: '' }])
+                .select('id')
+                .single();
+
+            if (errorCliente) throw errorCliente;
+            clienteId = nuevoCliente.id;
+        }
+
+        const fechaInicio = new Date();
+        const fechaFin = new Date(fechaInicio.getTime() + 60 * 60 * 1000);
+        const { error: errorTurno } = await clienteDb.from('turnos').insert([{
+            peluqueria_id: peluqueriaIdActual,
+            cliente_id: clienteId,
+            peluquero_id: peluqueroId,
+            descripcion_trabajo: 'Servicio de Salón',
+            duracion_minutos: 60,
+            fecha_hora_inicio: fechaInicio.toISOString(),
+            fecha_hora_fin: fechaFin.toISOString(),
+            estado: 'programado'
+        }]);
+
+        if (errorTurno) throw errorTurno;
+
+        mensaje.innerText = 'Turno guardado para ahora (duración: 1 hora).';
+        mensaje.style.color = '#27ae60';
+        document.getElementById('input-cliente').value = '';
+        await cargarTurnos();
+    } catch (error) {
+        console.error('Error al guardar el turno rápido:', error);
+        mensaje.innerText = 'No se pudo guardar el turno. Verifica los datos e inténtalo nuevamente.';
+        mensaje.style.color = 'red';
+    } finally {
+        if (boton) boton.disabled = false;
+    }
 }
 
 async function agendarTurnoAvanzado() {
@@ -1293,14 +1388,26 @@ async function guardarPeluquero() {
     if (!haySesionActiva()) return;
 
     const nombre = document.getElementById('nuevo-peluquero-nombre').value.trim();
+    const telefono = document.getElementById('nuevo-peluquero-telefono').value.trim();
     const com = document.getElementById('nuevo-peluquero-comision').value.trim();
     const color = document.getElementById('nuevo-peluquero-color').value;
     
     if (!nombre || !com) return alert("Nombre y comisión obligatorios.");
     
-    await clienteDb.from('peluqueros').insert([{peluqueria_id: peluqueriaIdActual, nombre: nombre, porcentaje_comision: parseFloat(com), color_calendario: color }]);
+    const { error } = await clienteDb.from('peluqueros').insert([{
+        peluqueria_id: peluqueriaIdActual,
+        nombre,
+        telefono: telefono || null,
+        porcentaje_comision: parseFloat(com),
+        color_calendario: color
+    }]);
+    if (error) {
+        console.error('Error al guardar el profesional:', error);
+        return alert("No se pudo guardar el profesional. Verifica que la columna telefono exista en la tabla peluqueros.");
+    }
     
     document.getElementById('nuevo-peluquero-nombre').value = '';
+    document.getElementById('nuevo-peluquero-telefono').value = '';
     cargarPeluquerosAdmin();
     cargarPeluquerosDropdown();
 }
@@ -1314,15 +1421,58 @@ async function cargarPeluquerosAdmin() {
     const { data: peluqueros } = await clienteDb.from('peluqueros').select('*').eq('peluqueria_id', peluqueriaIdActual).order('nombre', { ascending: true });
     let html = '';
     peluqueros.forEach(p => {
+        const telefono = (p.telefono || 'No informado').replace(/[&<>"']/g, caracter => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        })[caracter]);
         html += `<div style="border-left: 6px solid ${p.color_calendario}; padding: 10px; margin-bottom: 10px; background: #fff; display:flex; justify-content:space-between; align-items:center; border-radius:5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                     <div>
                         <strong style="font-size:16px;">${p.nombre}</strong><br>
+                        <span style="font-size:14px; color:#7f8c8d;">Teléfono: ${telefono}</span><br>
                         <span style="font-size:14px; color:#7f8c8d;">Comisión: ${p.porcentaje_comision}%</span>
                     </div>
-                    <button onclick="borrarPeluquero('${p.id}')" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Borrar</button>
+                    <div style="display:flex; gap:6px;">
+                        <button onclick="editarTelefonoPeluquero('${p.id}')" style="background:#3498db; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Editar teléfono</button>
+                        <button onclick="borrarPeluquero('${p.id}')" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:5px; cursor:pointer;">Borrar</button>
+                    </div>
                  </div>`;
     });
     contenedor.innerHTML = html;
+}
+
+async function editarTelefonoPeluquero(id) {
+    if (!haySesionActiva()) return;
+
+    const { data: peluquero, error: consultaError } = await clienteDb
+        .from('peluqueros')
+        .select('telefono')
+        .eq('id', id)
+        .eq('peluqueria_id', peluqueriaIdActual)
+        .single();
+    if (consultaError || !peluquero) {
+        console.error('Error al cargar el teléfono del profesional:', consultaError);
+        return alert("No se pudo cargar el teléfono del profesional.");
+    }
+
+    const telefono = prompt("Teléfono del profesional:", peluquero.telefono || '');
+    if (telefono === null) return;
+
+    const { data, error } = await clienteDb
+        .from('peluqueros')
+        .update({ telefono: telefono.trim() || null })
+        .eq('id', id)
+        .eq('peluqueria_id', peluqueriaIdActual)
+        .select('id')
+        .maybeSingle();
+    if (error || !data) {
+        console.error('Error al actualizar el teléfono del profesional:', error);
+        return alert("No se pudo actualizar el teléfono del profesional.");
+    }
+
+    cargarPeluquerosAdmin();
 }
 
 async function borrarPeluquero(id) {
@@ -1452,11 +1602,12 @@ async function generarPDFCajaMensual() {
 
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
+    const nombreSalon = document.getElementById('titulo-peluqueria')?.innerText.trim() || 'Peluqueria / Estilistas';
 
     // Encabezado
     doc.setFontSize(18);
     doc.setTextColor(44, 62, 80);
-    doc.text("AppFlekiyo - Reporte de Caja Mensual", 14, 20);
+    doc.text(`${nombreSalon} - Reporte de Caja Mensual`, 14, 20);
     
     doc.setFontSize(12);
     doc.setTextColor(127, 140, 141);
@@ -1528,5 +1679,3 @@ if (window.lucide) {
 
     iconObserver.observe(document.body, { childList: true, subtree: true });
 }
-
-

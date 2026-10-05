@@ -111,6 +111,7 @@
                         <option value="">Cargando peluqueros...</option>
                     </select>
                     <button onclick="crearTurnoNuevo()" class="btn-agendar">Guardar Turno</button>
+                    <p id="mensaje-turno-rapido" class="mensaje-exito"></p>
                 </aside>
 
                 <aside class="panel-alarmas" style="margin-top: 20px; background: #fff; padding: 15px; border-radius: 8px; border-left: 5px solid #f1c40f; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
@@ -367,6 +368,11 @@
                 <div class="grupo-input">
                     <label>Nombre del profesional:</label>
                     <input type="text" id="nuevo-peluquero-nombre" placeholder="Ej. Ana Gómez">
+                </div>
+
+                <div class="grupo-input">
+                    <label>Teléfono:</label>
+                    <input type="tel" id="nuevo-peluquero-telefono" placeholder="Ej. +54 9 299 1234567">
                 </div>
     
                 <div class="grupo-input">
