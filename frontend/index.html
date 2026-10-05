@@ -193,6 +193,17 @@
     </div>
 </div>
 
+<div id="modal-detalle-turno" class="modal-detalle-overlay" onclick="if (event.target === this) cerrarDetalleTurno()" hidden>
+    <section class="modal-detalle-card" role="dialog" aria-modal="true" aria-labelledby="modal-detalle-turno-titulo" tabindex="-1">
+        <div class="modal-detalle-header">
+            <h2 id="modal-detalle-turno-titulo">Detalle del turno</h2>
+            <button type="button" class="modal-detalle-cerrar" onclick="cerrarDetalleTurno()" aria-label="Cerrar detalle del turno">&times;</button>
+        </div>
+        <dl id="modal-detalle-turno-contenido" class="modal-detalle-contenido"></dl>
+        <button type="button" class="btn-accion" onclick="cerrarDetalleTurno()">Cerrar</button>
+    </section>
+</div>
+
     <!-- SOLAPA 2: Clientes e Historial -->
     <div id="solapa-clientes" class="contenido-solapa">
         <h2><i data-lucide="users" class="app-icon" aria-hidden="true"></i> Gestión de Clientes</h2>
@@ -259,6 +270,18 @@
                     <label>Nombre del producto:</label>
                     <input type="text" id="nuevo-producto-nombre" placeholder="Ej. Decolorante en Polvo">
                 </div>
+
+                <div class="grupo-input">
+                    <label for="nuevo-producto-categoria">Categoría:</label>
+                    <select id="nuevo-producto-categoria" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 5px;">
+                        <option value="">Seleccionar categoría</option>
+                        <option value="Coloración">Coloración</option>
+                        <option value="Oxidantes">Oxidantes</option>
+                        <option value="Decoloración">Decoloración</option>
+                        <option value="Tratamientos">Tratamientos</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
                 
                 <div class="grupo-input">
                     <label>Stock Inicial:</label>
@@ -291,6 +314,24 @@
                     <div style="background: #e74c3c; color: white; padding: 15px; border-radius: 8px; flex: 1; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                         <h4 style="margin: 0; font-size: 14px;">Alertas (Stock Bajo)</h4>
                         <p id="resumen-alertas-stock" style="font-size: 24px; font-weight: bold; margin: 5px 0 0 0;">0</p>
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 15px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label for="filtro-categoria-inventario" style="margin: 0;">Filtrar por categoría:</label>
+                        <select id="filtro-categoria-inventario" onchange="cargarProductosAdmin()" style="width: auto; min-width: 180px; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
+                            <option value="">Todas las categorías</option>
+                            <option value="Coloración">Coloración</option>
+                            <option value="Oxidantes">Oxidantes</option>
+                            <option value="Decoloración">Decoloración</option>
+                            <option value="Tratamientos">Tratamientos</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <label for="filtro-nombre-inventario" style="margin: 0;">Buscar por nombre:</label>
+                        <input type="search" id="filtro-nombre-inventario" oninput="cargarProductosAdmin()" placeholder="Ej. Decolorante" style="width: 100%; max-width: 320px; padding: 8px; border: 1px solid #ccc; border-radius: 5px;">
                     </div>
                 </div>
 

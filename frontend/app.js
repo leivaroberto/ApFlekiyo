@@ -8,6 +8,7 @@ const clienteDb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let peluqueriaIdActual = null;
 let usuarioActual = null;
 let calendarioGlobal = null;
+let elementoFocoDetalleTurno = null;
 
 function haySesionActiva() {
     return !!usuarioActual && !!peluqueriaIdActual;
@@ -407,7 +408,7 @@ async function cargarCalendario() {
 
     const { data: turnos, error } = await clienteDb
         .from('turnos')
-        .select('*, clientes(nombre, apellido), peluqueros(nombre, color_calendario)')
+        .select('*, clientes(nombre, apellido, telefono), peluqueros(nombre, color_calendario)')
         .eq('peluqueria_id', peluqueriaIdActual); // <-- AGREGADO
 
     if (error) {
@@ -427,7 +428,15 @@ async function cargarCalendario() {
             start: turno.fecha_hora_inicio,
             end: turno.fecha_hora_fin,
             backgroundColor: color,
-            borderColor: color
+            borderColor: color,
+            extendedProps: {
+                clienteNombre: `${turno.clientes?.nombre || 'Desconocido'} ${turno.clientes?.apellido || ''}`.trim(),
+                clienteTelefono: turno.clientes?.telefono || 'No informado',
+                peluqueroNombre: nombrePeluquero,
+                descripcionTrabajo: turno.descripcion_trabajo || 'Sin descripción',
+                duracionMinutos: turno.duracion_minutos,
+                estado: turno.estado || 'Sin estado'
+            }
         };
     });
 
@@ -451,6 +460,9 @@ async function cargarCalendario() {
         // --- CORRECCIÓN: ACTIVACIÓN DE DRAG & DROP ---
         editable: true, // Permite mover los turnos
         eventOverlap: true, 
+        eventClick: function(info) {
+            mostrarDetalleTurno(info);
+        },
 
         eventDrop: async function(info) {
             const turnoId = info.event.id;
@@ -483,6 +495,64 @@ async function cargarCalendario() {
 
     calendarioGlobal.render();
 }
+
+function mostrarDetalleTurno(info) {
+    const modal = document.getElementById('modal-detalle-turno');
+    const tarjeta = modal?.querySelector('.modal-detalle-card');
+    const contenido = document.getElementById('modal-detalle-turno-contenido');
+    if (!modal || !tarjeta || !contenido) return;
+
+    const evento = info.event;
+    const inicio = evento.start;
+    const fin = evento.end;
+    const duracion = evento.extendedProps.duracionMinutos
+        || (inicio && fin ? Math.round((fin - inicio) / 60000) : null);
+    const fecha = inicio
+        ? inicio.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+        : 'No informada';
+    const horario = inicio
+        ? `${inicio.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}${fin ? ` a ${fin.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}` : ''}`
+        : 'No informado';
+    const estado = String(evento.extendedProps.estado).replace(/[_-]/g, ' ');
+    const datos = [
+        ['Cliente', evento.extendedProps.clienteNombre],
+        ['Teléfono', evento.extendedProps.clienteTelefono],
+        ['Profesional', evento.extendedProps.peluqueroNombre],
+        ['Fecha', fecha],
+        ['Horario', horario],
+        ['Duración', duracion ? `${duracion} minutos` : 'No informada'],
+        ['Trabajo', evento.extendedProps.descripcionTrabajo],
+        ['Estado', estado]
+    ];
+
+    contenido.replaceChildren();
+    datos.forEach(([etiqueta, valor]) => {
+        const fila = document.createElement('div');
+        fila.className = 'modal-detalle-fila';
+        const titulo = document.createElement('dt');
+        titulo.textContent = etiqueta;
+        const detalle = document.createElement('dd');
+        detalle.textContent = valor || 'No informado';
+        fila.append(titulo, detalle);
+        contenido.appendChild(fila);
+    });
+
+    modal.hidden = false;
+    elementoFocoDetalleTurno = info.el || null;
+    tarjeta.focus();
+}
+
+function cerrarDetalleTurno() {
+    const modal = document.getElementById('modal-detalle-turno');
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    if (elementoFocoDetalleTurno?.isConnected) elementoFocoDetalleTurno.focus();
+    elementoFocoDetalleTurno = null;
+}
+
+document.addEventListener('keydown', event => {
+    if (event.key === 'Escape') cerrarDetalleTurno();
+});
 
 async function cargarTurnos() {
     if (!haySesionActiva()) return;
@@ -981,6 +1051,16 @@ function alternarOrdenProductos() {
     cargarProductosAdmin();
 }
 
+function escaparHtml(valor) {
+    return String(valor).replace(/[&<>"']/g, caracter => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+    })[caracter]);
+}
+
 async function cargarInventario() {
     if (!haySesionActiva()) return;
 
@@ -1016,16 +1096,18 @@ async function crearProductoNuevo() {
     if (typeof haySesionActiva === 'function' && !haySesionActiva()) return;
 
     const nombre = document.getElementById('nuevo-producto-nombre').value.trim();
+    const categoria = document.getElementById('nuevo-producto-categoria').value;
     const stockStr = document.getElementById('nuevo-producto-stock').value.trim();
     const unidad = document.getElementById('nuevo-producto-unidad').value;
     const mensaje = document.getElementById('mensaje-producto');
 
-    if (!nombre || !stockStr) return alert("Completa nombre y cantidad inicial.");
+    if (!nombre || !categoria || !stockStr) return alert("Completa nombre, categoría y cantidad inicial.");
 
     // Enviar a la base de datos
     const { error } = await clienteDb.from('insumos').insert([{ 
         peluqueria_id: peluqueriaIdActual, 
         nombre: nombre, 
+        categoria: categoria,
         stock_gramos: parseInt(stockStr), // Usamos esta columna por compatibilidad
         unidad_medida: unidad 
     }]);
@@ -1044,6 +1126,7 @@ async function crearProductoNuevo() {
         }
         // Limpiar formulario y recargar las tablas
         document.getElementById('nuevo-producto-nombre').value = '';
+        document.getElementById('nuevo-producto-categoria').value = '';
         document.getElementById('nuevo-producto-stock').value = '';
         cargarProductosAdmin(); 
         if (typeof cargarInventario === 'function') cargarInventario();
@@ -1071,8 +1154,31 @@ async function cargarProductosAdmin() {
         return;
     }
 
-    let contadorTotal = insumos.length;
-    let contadorAlertas = 0;
+    const contadorAlertas = insumos.reduce((total, insumo) => {
+        const unidad = insumo.unidad_medida || 'g';
+        const umbralAlerta = unidad === 'u' ? 10 : 100;
+        return total + (insumo.stock_gramos <= umbralAlerta ? 1 : 0);
+    }, 0);
+
+    if (panelTotal) panelTotal.innerText = insumos.length;
+    if (panelAlertas) panelAlertas.innerText = contadorAlertas;
+
+    const filtroCategoria = document.getElementById('filtro-categoria-inventario');
+    const categoriaSeleccionada = filtroCategoria ? filtroCategoria.value : '';
+    const filtroNombre = document.getElementById('filtro-nombre-inventario');
+    const nombreBuscado = filtroNombre ? filtroNombre.value.trim().toLocaleLowerCase('es') : '';
+    const insumosFiltrados = insumos.filter(insumo => {
+        const coincideCategoria = !categoriaSeleccionada
+            || (insumo.categoria || 'Otros') === categoriaSeleccionada;
+        const coincideNombre = !nombreBuscado
+            || insumo.nombre.toLocaleLowerCase('es').includes(nombreBuscado);
+        return coincideCategoria && coincideNombre;
+    });
+
+    if (insumosFiltrados.length === 0) {
+        contenedor.innerHTML = '<p>No hay productos que coincidan con los filtros.</p>';
+        return;
+    }
 
     let html = `
         <table class="tabla-inventario" style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
@@ -1083,6 +1189,7 @@ async function cargarProductosAdmin() {
                             Producto ${productosOrdenAscendente ? 'A-Z' : 'Z-A'}
                         </button>
                     </th>
+                    <th style="padding: 15px; border-bottom: 2px solid #ddd;">Categoría</th>
                     <th style="padding: 15px; border-bottom: 2px solid #ddd;">Stock Actual</th>
                     <th style="padding: 15px; border-bottom: 2px solid #ddd; text-align: center;">Ajuste Rápido</th>
                 </tr>
@@ -1090,7 +1197,7 @@ async function cargarProductosAdmin() {
             <tbody>
     `;
 
-    const insumosOrdenados = [...insumos].sort((a, b) =>
+    const insumosOrdenados = [...insumosFiltrados].sort((a, b) =>
         a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }) * (productosOrdenAscendente ? 1 : -1)
     );
     for (const insumo of insumosOrdenados) {
@@ -1098,10 +1205,9 @@ async function cargarProductosAdmin() {
         const umbralAlerta = (unidad === 'u') ? 10 : 100;
         const stockBajo = insumo.stock_gramos <= umbralAlerta;
         
-        if (stockBajo) contadorAlertas++;
-        
         const fondoFila = stockBajo ? '#fdedec' : 'transparent';
         const colorTexto = stockBajo ? '#c0392b' : '#2c3e50';
+        const categoria = escaparHtml(insumo.categoria || 'Otros');
         const icono = stockBajo
             ? '<i data-lucide="triangle-alert" class="app-icon" aria-hidden="true"></i>'
             : '<i data-lucide="circle-check" class="app-icon" aria-hidden="true"></i>';
@@ -1110,6 +1216,9 @@ async function cargarProductosAdmin() {
             <tr style="background-color: ${fondoFila}; border-bottom: 1px solid #eee;">
                 <td style="padding: 15px; font-weight: bold; color: ${colorTexto};">
                     ${icono} ${insumo.nombre}
+                </td>
+                <td style="padding: 15px; color: #5b6c7d;">
+                    ${categoria}
                 </td>
                 <td style="padding: 15px; font-weight: bold; color: ${colorTexto};">
                     ${insumo.stock_gramos} ${unidad}
@@ -1128,9 +1237,6 @@ async function cargarProductosAdmin() {
 
     html += `</tbody></table>`;
     contenedor.innerHTML = html;
-
-    if (panelTotal) panelTotal.innerText = contadorTotal;
-    if (panelAlertas) panelAlertas.innerText = contadorAlertas;
 }
 
 // Función que reemplaza a "sumarStock" para procesar sumas y restas validando unidades
