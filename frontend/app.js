@@ -9,6 +9,7 @@ let peluqueriaIdActual = null;
 let usuarioActual = null;
 let calendarioGlobal = null;
 let elementoFocoDetalleTurno = null;
+let turnoDetalleActual = null;
 
 function haySesionActiva() {
     return !!usuarioActual && !!peluqueriaIdActual;
@@ -537,9 +538,114 @@ function mostrarDetalleTurno(info) {
         contenido.appendChild(fila);
     });
 
+    turnoDetalleActual = evento;
+    const campoFecha = document.getElementById('modal-detalle-turno-fecha');
+    const mensaje = document.getElementById('modal-detalle-turno-mensaje');
+    if (campoFecha && inicio) campoFecha.value = fechaHoraLocalParaInput(inicio);
+    if (mensaje) {
+        mensaje.textContent = '';
+        mensaje.hidden = true;
+    }
+
     modal.hidden = false;
     elementoFocoDetalleTurno = info.el || null;
     tarjeta.focus();
+}
+
+function fechaHoraLocalParaInput(fecha) {
+    const ajustar = valor => String(valor).padStart(2, '0');
+    return `${fecha.getFullYear()}-${ajustar(fecha.getMonth() + 1)}-${ajustar(fecha.getDate())}T${ajustar(fecha.getHours())}:${ajustar(fecha.getMinutes())}`;
+}
+
+function mostrarMensajeDetalleTurno(texto, esError = true) {
+    const mensaje = document.getElementById('modal-detalle-turno-mensaje');
+    if (!mensaje) return;
+    mensaje.textContent = texto;
+    mensaje.style.color = esError ? '#b42318' : '#16803c';
+    mensaje.hidden = false;
+}
+
+function establecerAccionesDetalleTurnoDeshabilitadas(deshabilitadas) {
+    ['modal-detalle-turno-guardar', 'modal-detalle-turno-eliminar'].forEach(id => {
+        const boton = document.getElementById(id);
+        if (boton) boton.disabled = deshabilitadas;
+    });
+}
+
+async function refrescarAgendaTrasCambio() {
+    await cargarCalendario();
+    await Promise.all([cargarTurnos(), cargarProximosTurnos()]);
+}
+
+async function guardarCambiosTurno() {
+    if (!haySesionActiva() || !turnoDetalleActual) return;
+
+    const campoFecha = document.getElementById('modal-detalle-turno-fecha');
+    const fechaHoraStr = campoFecha?.value;
+    const fechaInicio = fechaHoraStr ? new Date(fechaHoraStr) : null;
+    if (!fechaInicio || Number.isNaN(fechaInicio.getTime())) {
+        mostrarMensajeDetalleTurno('Ingresa un día y horario válidos.');
+        return;
+    }
+
+    const inicioOriginal = turnoDetalleActual.start;
+    const finOriginal = turnoDetalleActual.end;
+    const duracion = turnoDetalleActual.extendedProps.duracionMinutos
+        || (inicioOriginal && finOriginal ? Math.round((finOriginal - inicioOriginal) / 60000) : 60);
+    const fechaFin = new Date(fechaInicio.getTime() + duracion * 60000);
+    const boton = document.getElementById('modal-detalle-turno-guardar');
+    establecerAccionesDetalleTurnoDeshabilitadas(true);
+
+    try {
+        const { data, error } = await clienteDb
+            .from('turnos')
+            .update({
+                fecha_hora_inicio: fechaInicio.toISOString(),
+                fecha_hora_fin: fechaFin.toISOString()
+            })
+            .eq('id', turnoDetalleActual.id)
+            .eq('peluqueria_id', peluqueriaIdActual)
+            .select('id')
+            .maybeSingle();
+
+        if (error) throw error;
+        if (!data) throw new Error('No se encontró el turno para actualizar.');
+
+        cerrarDetalleTurno();
+        await refrescarAgendaTrasCambio();
+    } catch (error) {
+        console.error('Error al actualizar fecha y horario del turno:', error);
+        mostrarMensajeDetalleTurno('No se pudo actualizar el turno. Inténtalo nuevamente.');
+    } finally {
+        if (boton) establecerAccionesDetalleTurnoDeshabilitadas(false);
+    }
+}
+
+async function eliminarTurnoDesdeDetalle() {
+    if (!haySesionActiva() || !turnoDetalleActual) return;
+    if (!confirm('¿Estás seguro de que deseas eliminar este turno? Esta acción no se puede deshacer.')) return;
+
+    establecerAccionesDetalleTurnoDeshabilitadas(true);
+    try {
+        const { data, error } = await clienteDb
+            .from('turnos')
+            .delete()
+            .eq('id', turnoDetalleActual.id)
+            .eq('peluqueria_id', peluqueriaIdActual)
+            .select('id')
+            .maybeSingle();
+
+        if (error) throw error;
+        if (!data) throw new Error('No se encontró el turno para eliminar.');
+
+        cerrarDetalleTurno();
+        await refrescarAgendaTrasCambio();
+    } catch (error) {
+        console.error('Error al eliminar el turno desde el calendario:', error);
+        mostrarMensajeDetalleTurno('No se pudo eliminar el turno. Inténtalo nuevamente.');
+    } finally {
+        establecerAccionesDetalleTurnoDeshabilitadas(false);
+    }
 }
 
 function cerrarDetalleTurno() {
@@ -548,6 +654,7 @@ function cerrarDetalleTurno() {
     modal.hidden = true;
     if (elementoFocoDetalleTurno?.isConnected) elementoFocoDetalleTurno.focus();
     elementoFocoDetalleTurno = null;
+    turnoDetalleActual = null;
 }
 
 document.addEventListener('keydown', event => {

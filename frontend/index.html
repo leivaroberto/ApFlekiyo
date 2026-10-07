@@ -200,7 +200,16 @@
             <button type="button" class="modal-detalle-cerrar" onclick="cerrarDetalleTurno()" aria-label="Cerrar detalle del turno">&times;</button>
         </div>
         <dl id="modal-detalle-turno-contenido" class="modal-detalle-contenido"></dl>
-        <button type="button" class="btn-accion" onclick="cerrarDetalleTurno()">Cerrar</button>
+        <div class="grupo-input modal-edicion-turno">
+            <label for="modal-detalle-turno-fecha">Modificar día y horario:</label>
+            <input type="datetime-local" id="modal-detalle-turno-fecha" required>
+        </div>
+        <p id="modal-detalle-turno-mensaje" class="modal-turno-mensaje" role="status" aria-live="polite" hidden></p>
+        <div class="modal-detalle-acciones">
+            <button type="button" class="btn-accion" id="modal-detalle-turno-guardar" onclick="guardarCambiosTurno()">Guardar cambios</button>
+            <button type="button" class="btn-eliminar-turno" id="modal-detalle-turno-eliminar" onclick="eliminarTurnoDesdeDetalle()">Eliminar turno</button>
+            <button type="button" class="modal-detalle-cancelar" onclick="cerrarDetalleTurno()">Cerrar</button>
+        </div>
     </section>
 </div>
 
