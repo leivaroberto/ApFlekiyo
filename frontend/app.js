@@ -1787,49 +1787,6 @@ function actualizarConfiguracionAlarma() {
     revisarTurnosProximos();
 }
 
-function actualizarEstadoPruebaAlarma(texto, color = '#7f8c8d') {
-    const estado = document.getElementById('estado-prueba-alarma');
-    if (!estado) return;
-    estado.textContent = texto;
-    estado.style.color = color;
-}
-
-async function probarNotificacion() {
-    if (!('Notification' in window)) {
-        actualizarEstadoPruebaAlarma('Este navegador no admite notificaciones del sistema.', '#b42318');
-        return;
-    }
-    if (!window.isSecureContext) {
-        actualizarEstadoPruebaAlarma('Se requiere HTTPS o localhost para mostrar notificaciones.', '#b42318');
-        return;
-    }
-
-    try {
-        const permiso = Notification.permission === 'default'
-            ? await Notification.requestPermission()
-            : Notification.permission;
-        if (permiso !== 'granted') {
-            actualizarEstadoPruebaAlarma(
-                permiso === 'denied'
-                    ? 'Permiso bloqueado: habilita notificaciones para este sitio en el navegador.'
-                    : 'No se concedió permiso para notificar.',
-                '#b42318'
-            );
-            return;
-        }
-
-        const notificacion = new Notification('AppFlekiyo: prueba', {
-            body: 'Las notificaciones de este navegador están funcionando.',
-            tag: 'apflekiyo-prueba'
-        });
-        notificacion.onerror = () => actualizarEstadoPruebaAlarma('El navegador no pudo mostrar la notificación.', '#b42318');
-        actualizarEstadoPruebaAlarma('Prueba enviada. Revisa el centro de notificaciones del dispositivo.', '#16803c');
-    } catch (error) {
-        console.error('No se pudo mostrar la notificación de prueba:', error);
-        actualizarEstadoPruebaAlarma(error.message || 'El navegador bloqueó la notificación de prueba.', '#b42318');
-    }
-}
-
 function actualizarEstadoAlarma(texto, color) {
     const estado = document.getElementById('estado-alarma');
     if (!estado) return;
