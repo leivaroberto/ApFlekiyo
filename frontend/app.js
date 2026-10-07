@@ -789,11 +789,13 @@ async function cambiarEstado(turnoId, nuevoEstado) {
                 await clienteDb.from('turnos').update({ resena: resena }).eq('id', turnoId);
                 
                 // 2. Averiguamos qué peluquero atendió este turno para su comisión
-                const { data: turnoInfo } = await clienteDb
+                const { data: turnoInfo, error: errorTurno } = await clienteDb
                     .from('turnos')
                     .select('peluquero_id')
                     .eq('id', turnoId)
                     .single();
+                if (errorTurno) throw errorTurno;
+                if (!turnoInfo?.peluquero_id) throw new Error('El turno no tiene un profesional asignado.');
 
                 // 3. Enviamos el paquete de datos al servidor (fijamos gramosUsados en 0)
                 const respuesta = await fetch(`${RENDER_URL}/api/finalizar-turno`, {
@@ -801,19 +803,22 @@ async function cambiarEstado(turnoId, nuevoEstado) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         turnoId: turnoId,
+                        peluqueriaId: peluqueriaIdActual,
                         peluqueroId: turnoInfo.peluquero_id,
                         insumoId: 1, 
                         gramosUsados: 0, // Mantenemos esta variable en 0 para que tu backend no falle
-                        precioTotal: parseFloat(precio) || 0 
+                        precioTotal: Number(precio.trim().replace(',', '.'))
                     })
                 });
 
-                const resultado = await respuesta.json();
-                alert(resultado.mensaje || "Hubo un problema: " + resultado.error);
+                const resultado = await respuesta.json().catch(() => ({}));
+                if (!respuesta.ok) throw new Error(resultado.error || 'No se pudo registrar el cobro en caja.');
+                await Promise.all([cargarCaja(), cargarCajaMensual()]);
+                alert(resultado.mensaje || "El cobro se registró correctamente.");
                 
             } catch (errorRender) {
                 console.error("Error al conectar con Render:", errorRender);
-                alert("El turno finalizó, pero no pudimos conectar con el servidor para la caja.");
+                alert(`El turno se marcó como finalizado, pero no se pudo registrar el cobro en caja: ${errorRender.message}`);
             }
         } else {
             alert("Operación cancelada. El turno se marcó como finalizado pero no se registraron los pagos.");
