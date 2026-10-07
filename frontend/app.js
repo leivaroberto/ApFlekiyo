@@ -1715,12 +1715,6 @@ function actualizarEstadoAlarma(texto, color) {
     estado.style.color = color;
 }
 
-function actualizarConfiguracionAlarma() {
-    if (!temporizadorAlarmas) return;
-    const minutos = Number(document.getElementById('minutos-alarma')?.value) || 10;
-    actualizarEstadoAlarma(`Alarmas activas: aviso ${minutos} min antes.`, '#16803c');
-}
-
 async function activarAlarmas() {
     if (!haySesionActiva()) {
         actualizarEstadoAlarma('Inicia sesión para activar las alarmas.', '#b42318');
@@ -1798,7 +1792,6 @@ async function revisarTurnosProximos() {
 
         if (error) throw error;
 
-        if (temporizadorAlarmas) actualizarConfiguracionAlarma();
         const minutosAviso = Number(document.getElementById('minutos-alarma')?.value) || 10;
         const ventanaAvisoMs = minutosAviso * 60 * 1000;
         turnos.forEach(turno => {
