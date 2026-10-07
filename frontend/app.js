@@ -1704,95 +1704,144 @@ clienteDb.channel('cambios-en-caja').on('postgres_changes', { event: '*', schema
 
 
 // --- 12. MÓDULO DE ALARMAS Y NOTIFICACIONES ---
-let turnosNotificados = []; 
+const turnosNotificados = new Set();
+let temporizadorAlarmas = null;
+let revisandoAlarmas = false;
 
-function solicitarPermisoNotificaciones() {
-    if ("Notification" in window) {
-        Notification.requestPermission().then(permission => {
-            if (permission === "granted") {
-                console.log("Notificaciones de AppFlekiyo activadas.");
-            }
-        });
-    }
+function actualizarEstadoAlarma(texto, color) {
+    const estado = document.getElementById('estado-alarma');
+    if (!estado) return;
+    estado.textContent = texto;
+    estado.style.color = color;
 }
-// --- MÓDULO DE ALARMAS ---
-let temporizadorAlarmas;
 
-function activarAlarmas() {
-    if (!("Notification" in window)) {
-        alert("Tu navegador no soporta notificaciones.");
+function actualizarConfiguracionAlarma() {
+    if (!temporizadorAlarmas) return;
+    const minutos = Number(document.getElementById('minutos-alarma')?.value) || 10;
+    actualizarEstadoAlarma(`Alarmas activas: aviso ${minutos} min antes.`, '#16803c');
+}
+
+async function activarAlarmas() {
+    if (!haySesionActiva()) {
+        actualizarEstadoAlarma('Inicia sesión para activar las alarmas.', '#b42318');
+        return;
+    }
+    if (!('Notification' in window)) {
+        actualizarEstadoAlarma('Este navegador no permite notificaciones.', '#b42318');
+        alert('Tu navegador no soporta notificaciones. Prueba con Chrome o Edge actualizado.');
+        return;
+    }
+    if (!window.isSecureContext) {
+        actualizarEstadoAlarma('Las notificaciones requieren una conexión segura (HTTPS).', '#b42318');
+        alert('Las notificaciones requieren HTTPS o abrir la aplicación en localhost.');
         return;
     }
 
-    Notification.requestPermission().then(permission => {
-        const textoEstado = document.getElementById('estado-alarma');
-        
-        if (permission === "granted") {
-            textoEstado.innerHTML = 'Alarmas ACTIVAS <i data-lucide="circle-check" class="app-icon" aria-hidden="true"></i>';
-            textoEstado.style.color = "#27ae60";
-            
+    const boton = document.getElementById('btn-activar-alarmas');
+    if (boton) boton.disabled = true;
+    actualizarEstadoAlarma('Solicitando permiso para notificar...', '#5b6c7d');
+
+    try {
+        const permiso = Notification.permission === 'default'
+            ? await Notification.requestPermission()
+            : Notification.permission;
+
+        if (permiso !== 'granted') {
             if (temporizadorAlarmas) clearInterval(temporizadorAlarmas);
-            temporizadorAlarmas = setInterval(revisarTurnosProximos, 60000);
-            alert("¡Notificaciones activadas con éxito!");
-        } else {
-            textoEstado.innerHTML = 'Permiso Denegado <i data-lucide="circle-x" class="app-icon" aria-hidden="true"></i>';
-            textoEstado.style.color = "red";
-            alert("Debes dar permiso en tu navegador para usar las alarmas.");
+            temporizadorAlarmas = null;
+            if (boton) boton.textContent = 'Activar Notificaciones';
+            actualizarEstadoAlarma(
+                permiso === 'denied'
+                    ? 'Permiso bloqueado. Habilita las notificaciones desde el navegador.'
+                    : 'No se concedió permiso para notificar.',
+                '#b42318'
+            );
+            return;
         }
-    });
+
+        if (temporizadorAlarmas) clearInterval(temporizadorAlarmas);
+        const minutos = Number(document.getElementById('minutos-alarma')?.value) || 10;
+        actualizarEstadoAlarma(`Alarmas activas: aviso ${minutos} min antes.`, '#16803c');
+        if (boton) boton.textContent = 'Notificaciones activas';
+        temporizadorAlarmas = setInterval(revisarTurnosProximos, 30000);
+        await revisarTurnosProximos();
+    } catch (error) {
+        console.error('No se pudieron activar las notificaciones:', error);
+        actualizarEstadoAlarma('No se pudieron activar las notificaciones. Revisa los permisos del navegador.', '#b42318');
+    } finally {
+        if (boton) boton.disabled = false;
+    }
 }
-async function monitorearTurnosProximos() {
-    if (!haySesionActiva()) return;
 
-    const hoyInicio = new Date();
-    const hoyFin = new Date();
-    hoyFin.setHours(23, 59, 59, 999);
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && temporizadorAlarmas) {
+        revisarTurnosProximos();
+    }
+});
 
-    const { data: turnos, error } = await clienteDb
-        .from('turnos')
-        .select('id, fecha_hora_inicio, clientes(nombre, apellido), peluqueros(nombre)')
-        .eq('peluqueria_id', peluqueriaIdActual) // <-- AGREGADO
-        .gte('fecha_hora_inicio', hoyInicio.toISOString())
-        .lte('fecha_hora_inicio', hoyFin.toISOString())
-        .eq('estado', 'programado'); 
-
-    if (error || !turnos) return;
+async function revisarTurnosProximos() {
+    if (!haySesionActiva() || revisandoAlarmas) return;
+    revisandoAlarmas = true;
 
     const ahora = new Date();
+    const finDelDia = new Date(ahora);
+    finDelDia.setHours(23, 59, 59, 999);
 
-    turnos.forEach(turno => {
-        const fechaTurno = new Date(turno.fecha_hora_inicio);
-        const diferenciaMinutos = Math.floor((fechaTurno - ahora) / (1000 * 60));
+    try {
+        const { data: turnos, error } = await clienteDb
+            .from('turnos')
+            .select('id, fecha_hora_inicio, descripcion_trabajo, clientes(nombre, apellido), peluqueros(nombre)')
+            .eq('peluqueria_id', peluqueriaIdActual)
+            .gte('fecha_hora_inicio', ahora.toISOString())
+            .lte('fecha_hora_inicio', finDelDia.toISOString())
+            .eq('estado', 'programado');
 
-        // Si faltan entre 1 y 15 minutos y no sonó antes
-        if (diferenciaMinutos > 0 && diferenciaMinutos <= 15 && !turnosNotificados.includes(turno.id)) {
-            lanzarAlarma(turno, diferenciaMinutos);
-            turnosNotificados.push(turno.id);
-        }
-    });
+        if (error) throw error;
+
+        if (temporizadorAlarmas) actualizarConfiguracionAlarma();
+        const minutosAviso = Number(document.getElementById('minutos-alarma')?.value) || 10;
+        const ventanaAvisoMs = minutosAviso * 60 * 1000;
+        turnos.forEach(turno => {
+            const milisegundosRestantes = new Date(turno.fecha_hora_inicio).getTime() - Date.now();
+            if (milisegundosRestantes >= 0 && milisegundosRestantes <= ventanaAvisoMs && !turnosNotificados.has(turno.id)) {
+                const minutosRestantes = Math.ceil(milisegundosRestantes / 60000);
+                lanzarAlarma(turno, minutosRestantes);
+                turnosNotificados.add(turno.id);
+            }
+        });
+    } catch (error) {
+        console.error('Error al revisar los turnos para las alarmas:', error);
+        actualizarEstadoAlarma('Error al revisar los turnos. Comprueba la conexión.', '#b42318');
+    } finally {
+        revisandoAlarmas = false;
+    }
 }
 
 function lanzarAlarma(turno, minutosRestantes) {
-    const nombreCliente = turno.clientes?.nombre || 'Un cliente';
+    const nombreCliente = [turno.clientes?.nombre, turno.clientes?.apellido].filter(Boolean).join(' ') || 'Un cliente';
     const nombrePeluquero = turno.peluqueros?.nombre || 'el salón';
-    const mensaje = `¡Atención! Turno en ${minutosRestantes} minutos: ${nombreCliente} con ${nombrePeluquero}.`;
+    const trabajo = turno.descripcion_trabajo ? ` (${turno.descripcion_trabajo})` : '';
+    const mensaje = `¡Atención! Turno en ${minutosRestantes} minutos: ${nombreCliente} con ${nombrePeluquero}${trabajo}.`;
 
-    // Notificación visual
-    if ("Notification" in window && Notification.permission === "granted") {
-        new Notification("Alarma AppFlekiyo", {
+    try {
+        const notificacion = new Notification('Alarma AppFlekiyo', {
             body: mensaje,
-            icon: "https://cdn-icons-png.flaticon.com/512/3237/3237472.png",
-            vibrate: [200, 100, 200] 
+            tag: `turno-${turno.id}`,
+            renotify: false
         });
-    } else {
+        notificacion.onclick = () => {
+            window.focus();
+            notificacion.close();
+        };
+    } catch (error) {
+        console.error('No se pudo mostrar la notificación del turno:', error);
         alert(mensaje);
     }
 
-    // Alarma por voz (Sintetizador del navegador)
     if ('speechSynthesis' in window) {
         const voz = new SpeechSynthesisUtterance(mensaje);
-        voz.lang = 'es-AR'; 
-        voz.rate = 1; 
+        voz.lang = 'es-AR';
+        voz.rate = 1;
         window.speechSynthesis.speak(voz);
     }
 }
@@ -1868,14 +1917,6 @@ async function generarPDFCajaMensual() {
     // Guardar archivo
     doc.save(`Reporte_Caja_${mesActualNombre.replace(/\s+/g, '_')}.pdf`);
 }
-// Inicializar las alarmas (Asegúrate de que esto quede al final del todo)
-solicitarPermisoNotificaciones();
-setInterval(() => {
-    if (haySesionActiva()) {
-        monitorearTurnosProximos();
-    }
-}, 60000); // Revisa cada 60 segundos
-
 if (window.lucide) {
     window.lucide.createIcons();
 
