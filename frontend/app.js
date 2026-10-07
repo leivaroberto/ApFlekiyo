@@ -380,6 +380,7 @@ function inicializarApp() {
     cargarProximosTurnos();
     cargarPeluquerosAdmin();
     cargarProductosAdmin();
+    restaurarAlarmas();
 }
 
 function abrirSolapa(idSolapa, evento) {
@@ -1707,6 +1708,127 @@ clienteDb.channel('cambios-en-caja').on('postgres_changes', { event: '*', schema
 const turnosNotificados = new Set();
 let temporizadorAlarmas = null;
 let revisandoAlarmas = false;
+const INTERVALO_REVISION_ALARMAS_MS = 15000;
+const TOLERANCIA_ALARMA_TARDIA_MS = 5 * 60 * 1000;
+
+function clavePreferenciaAlarma() {
+    return `apflekiyo-alarmas-activas-${peluqueriaIdActual}`;
+}
+
+function claveTurnosNotificados() {
+    return `apflekiyo-turnos-notificados-${peluqueriaIdActual}`;
+}
+
+function cargarTurnosNotificados() {
+    turnosNotificados.clear();
+    try {
+        const almacenados = JSON.parse(localStorage.getItem(claveTurnosNotificados()) || '[]');
+        almacenados.forEach(turnoKey => turnosNotificados.add(turnoKey));
+    } catch (error) {
+        console.error('No se pudo recuperar el registro de alarmas ya notificadas:', error);
+    }
+}
+
+function guardarTurnoNotificado(turnoKey) {
+    turnosNotificados.add(turnoKey);
+    try {
+        const turnosRecientes = [...turnosNotificados].slice(-300);
+        localStorage.setItem(claveTurnosNotificados(), JSON.stringify(turnosRecientes));
+    } catch (error) {
+        console.error('No se pudo guardar el registro de alarmas notificadas:', error);
+    }
+}
+
+function actualizarBotonAlarma(activo) {
+    const boton = document.getElementById('btn-activar-alarmas');
+    if (boton) boton.textContent = activo ? 'Notificaciones activas' : 'Activar Notificaciones';
+}
+
+function restaurarAlarmas() {
+    cargarTurnosNotificados();
+    try {
+        const minutosGuardados = localStorage.getItem(`apflekiyo-minutos-alarma-${peluqueriaIdActual}`);
+        const selectorMinutos = document.getElementById('minutos-alarma');
+        if (selectorMinutos && ['5', '10', '15', '30'].includes(minutosGuardados)) {
+            selectorMinutos.value = minutosGuardados;
+        }
+        const activas = localStorage.getItem(clavePreferenciaAlarma()) === 'true';
+        if (activas && 'Notification' in window && Notification.permission === 'granted') {
+            iniciarRevisionAlarmas();
+            return;
+        }
+        if (activas && 'Notification' in window && Notification.permission !== 'granted') {
+            localStorage.removeItem(clavePreferenciaAlarma());
+        }
+    } catch (error) {
+        console.error('No se pudo restaurar la configuración de alarmas:', error);
+    }
+    actualizarBotonAlarma(false);
+}
+
+function iniciarRevisionAlarmas() {
+    if (temporizadorAlarmas) clearInterval(temporizadorAlarmas);
+    const minutos = Number(document.getElementById('minutos-alarma')?.value) || 10;
+    actualizarBotonAlarma(true);
+    actualizarEstadoAlarma(`Alarmas activas: aviso ${minutos} min antes.`, '#16803c');
+    temporizadorAlarmas = setInterval(revisarTurnosProximos, INTERVALO_REVISION_ALARMAS_MS);
+    revisarTurnosProximos();
+}
+
+function actualizarConfiguracionAlarma() {
+    if (!temporizadorAlarmas) return;
+    const minutos = Number(document.getElementById('minutos-alarma')?.value) || 10;
+    try {
+        localStorage.setItem(`apflekiyo-minutos-alarma-${peluqueriaIdActual}`, String(minutos));
+    } catch (error) {
+        console.error('No se pudo guardar el intervalo elegido para la alarma:', error);
+    }
+    actualizarEstadoAlarma(`Alarmas activas: aviso ${minutos} min antes.`, '#16803c');
+    revisarTurnosProximos();
+}
+
+function actualizarEstadoPruebaAlarma(texto, color = '#7f8c8d') {
+    const estado = document.getElementById('estado-prueba-alarma');
+    if (!estado) return;
+    estado.textContent = texto;
+    estado.style.color = color;
+}
+
+async function probarNotificacion() {
+    if (!('Notification' in window)) {
+        actualizarEstadoPruebaAlarma('Este navegador no admite notificaciones del sistema.', '#b42318');
+        return;
+    }
+    if (!window.isSecureContext) {
+        actualizarEstadoPruebaAlarma('Se requiere HTTPS o localhost para mostrar notificaciones.', '#b42318');
+        return;
+    }
+
+    try {
+        const permiso = Notification.permission === 'default'
+            ? await Notification.requestPermission()
+            : Notification.permission;
+        if (permiso !== 'granted') {
+            actualizarEstadoPruebaAlarma(
+                permiso === 'denied'
+                    ? 'Permiso bloqueado: habilita notificaciones para este sitio en el navegador.'
+                    : 'No se concedió permiso para notificar.',
+                '#b42318'
+            );
+            return;
+        }
+
+        const notificacion = new Notification('AppFlekiyo: prueba', {
+            body: 'Las notificaciones de este navegador están funcionando.',
+            tag: 'apflekiyo-prueba'
+        });
+        notificacion.onerror = () => actualizarEstadoPruebaAlarma('El navegador no pudo mostrar la notificación.', '#b42318');
+        actualizarEstadoPruebaAlarma('Prueba enviada. Revisa el centro de notificaciones del dispositivo.', '#16803c');
+    } catch (error) {
+        console.error('No se pudo mostrar la notificación de prueba:', error);
+        actualizarEstadoPruebaAlarma(error.message || 'El navegador bloqueó la notificación de prueba.', '#b42318');
+    }
+}
 
 function actualizarEstadoAlarma(texto, color) {
     const estado = document.getElementById('estado-alarma');
@@ -1753,12 +1875,13 @@ async function activarAlarmas() {
             return;
         }
 
-        if (temporizadorAlarmas) clearInterval(temporizadorAlarmas);
-        const minutos = Number(document.getElementById('minutos-alarma')?.value) || 10;
-        actualizarEstadoAlarma(`Alarmas activas: aviso ${minutos} min antes.`, '#16803c');
-        if (boton) boton.textContent = 'Notificaciones activas';
-        temporizadorAlarmas = setInterval(revisarTurnosProximos, 30000);
-        await revisarTurnosProximos();
+        try {
+            localStorage.setItem(clavePreferenciaAlarma(), 'true');
+            localStorage.setItem(`apflekiyo-minutos-alarma-${peluqueriaIdActual}`, String(document.getElementById('minutos-alarma')?.value || 10));
+        } catch (error) {
+            console.error('No se pudo guardar la configuración de alarmas:', error);
+        }
+        iniciarRevisionAlarmas();
     } catch (error) {
         console.error('No se pudieron activar las notificaciones:', error);
         actualizarEstadoAlarma('No se pudieron activar las notificaciones. Revisa los permisos del navegador.', '#b42318');
@@ -1773,38 +1896,61 @@ document.addEventListener('visibilitychange', () => {
     }
 });
 
+document.addEventListener('focus', () => {
+    if (temporizadorAlarmas) revisarTurnosProximos();
+});
+
 async function revisarTurnosProximos() {
     if (!haySesionActiva() || revisandoAlarmas) return;
     revisandoAlarmas = true;
 
     const ahora = new Date();
-    const finDelDia = new Date(ahora);
-    finDelDia.setHours(23, 59, 59, 999);
+    const desde = new Date(ahora.getTime() - TOLERANCIA_ALARMA_TARDIA_MS);
+    const hasta = new Date(ahora.getTime() + 30 * 60 * 1000);
 
     try {
+        if (!('Notification' in window) || Notification.permission !== 'granted') {
+            if (temporizadorAlarmas) clearInterval(temporizadorAlarmas);
+            temporizadorAlarmas = null;
+            localStorage.removeItem(clavePreferenciaAlarma());
+            actualizarBotonAlarma(false);
+            actualizarEstadoAlarma('Permiso de notificaciones desactivado en el navegador.', '#b42318');
+            return;
+        }
+
         const { data: turnos, error } = await clienteDb
             .from('turnos')
-            .select('id, fecha_hora_inicio, descripcion_trabajo, clientes(nombre, apellido), peluqueros(nombre)')
+            .select('id, fecha_hora_inicio, descripcion_trabajo, estado, clientes(nombre, apellido), peluqueros(nombre)')
             .eq('peluqueria_id', peluqueriaIdActual)
-            .gte('fecha_hora_inicio', ahora.toISOString())
-            .lte('fecha_hora_inicio', finDelDia.toISOString())
-            .eq('estado', 'programado');
+            .gte('fecha_hora_inicio', desde.toISOString())
+            .lte('fecha_hora_inicio', hasta.toISOString());
 
         if (error) throw error;
 
         const minutosAviso = Number(document.getElementById('minutos-alarma')?.value) || 10;
         const ventanaAvisoMs = minutosAviso * 60 * 1000;
+        let turnosEnVentana = 0;
         turnos.forEach(turno => {
+            if (turno.estado === 'finalizado') return;
             const milisegundosRestantes = new Date(turno.fecha_hora_inicio).getTime() - Date.now();
-            if (milisegundosRestantes >= 0 && milisegundosRestantes <= ventanaAvisoMs && !turnosNotificados.has(turno.id)) {
-                const minutosRestantes = Math.ceil(milisegundosRestantes / 60000);
+            const claveTurno = `${turno.id}:${turno.fecha_hora_inicio}`;
+            if (milisegundosRestantes <= ventanaAvisoMs
+                && milisegundosRestantes >= -TOLERANCIA_ALARMA_TARDIA_MS
+                && !turnosNotificados.has(claveTurno)) {
+                turnosEnVentana++;
+                const minutosRestantes = Math.max(0, Math.ceil(milisegundosRestantes / 60000));
                 lanzarAlarma(turno, minutosRestantes);
-                turnosNotificados.add(turno.id);
+                guardarTurnoNotificado(claveTurno);
             }
         });
+        const horaRevision = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        actualizarEstadoAlarma(
+            `Alarmas activas (${minutosAviso} min). Revisado ${horaRevision}${turnosEnVentana ? ` · ${turnosEnVentana} aviso(s)` : ''}.`,
+            '#16803c'
+        );
     } catch (error) {
         console.error('Error al revisar los turnos para las alarmas:', error);
-        actualizarEstadoAlarma('Error al revisar los turnos. Comprueba la conexión.', '#b42318');
+        actualizarEstadoAlarma(`Error al revisar turnos: ${error.message || 'comprueba la conexión y los permisos.'}`, '#b42318');
     } finally {
         revisandoAlarmas = false;
     }
@@ -1825,6 +1971,10 @@ function lanzarAlarma(turno, minutosRestantes) {
         notificacion.onclick = () => {
             window.focus();
             notificacion.close();
+        };
+        notificacion.onerror = error => {
+            console.error('El navegador no pudo mostrar la notificación del turno:', error);
+            alert(mensaje);
         };
     } catch (error) {
         console.error('No se pudo mostrar la notificación del turno:', error);
