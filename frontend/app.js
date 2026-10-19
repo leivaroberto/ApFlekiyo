@@ -785,6 +785,10 @@ async function cambiarEstado(turnoId, nuevoEstado) {
             const RENDER_URL = 'https://apflekiyo.onrender.com'; 
             
             try {
+                const { data: sessionData, error: sessionError } = await clienteDb.auth.getSession();
+                if (sessionError) throw sessionError;
+                if (!sessionData.session) throw new Error('Inicia sesión nuevamente para registrar el cobro.');
+
                 // 1. Guardamos la reseña en el turno
                 await clienteDb.from('turnos').update({ resena: resena }).eq('id', turnoId);
                 
@@ -800,7 +804,10 @@ async function cambiarEstado(turnoId, nuevoEstado) {
                 // 3. Enviamos el paquete de datos al servidor (fijamos gramosUsados en 0)
                 const respuesta = await fetch(`${RENDER_URL}/api/finalizar-turno`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionData.session.access_token}`
+                    },
                     body: JSON.stringify({
                         turnoId: turnoId,
                         peluqueriaId: peluqueriaIdActual,
