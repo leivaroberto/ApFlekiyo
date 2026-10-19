@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
 const app = express();
 app.use(cors());
@@ -8,7 +9,10 @@ app.use(express.json()); // Permite recibir datos del frontend
 
 // 1. Conexión a Supabase desde el Servidor
 const SUPABASE_URL = 'https://xpufmicxmbhpqocrwgdz.supabase.co';
-const SUPABASE_ANON_KEY = '******'; // Pega tu clave súper larga aquí
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY;
+if (!SUPABASE_ANON_KEY) {
+    throw new Error('Falta configurar SUPABASE_ANON_KEY en las variables de entorno del backend.');
+}
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2. Ruta de diagnóstico
@@ -29,7 +33,16 @@ app.post('/api/finalizar-turno', async (req, res) => {
         }
 
         const { data: authData, error: authError } = await supabase.auth.getUser(token);
-        if (authError || !authData.user) {
+        if (authError) {
+            console.error('Supabase rechazó el token de sesión:', {
+                status: authError.status,
+                code: authError.code,
+                message: authError.message
+            });
+            return res.status(401).json({ error: "Supabase rechazó la sesión. Revisa los logs del backend en Render." });
+        }
+        if (!authData.user) {
+            console.error('Supabase validó la solicitud sin devolver un usuario.');
             return res.status(401).json({ error: "La sesión no es válida. Inicia sesión nuevamente." });
         }
 
