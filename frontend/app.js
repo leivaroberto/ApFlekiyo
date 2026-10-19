@@ -722,13 +722,10 @@ function renderizarTurnos(turnos) {
         let botonBorrarHTML = '';
 
         if (esFinalizado) {
-            // Diseño bloqueado de solo lectura
             controlesHTML = `<span style="color: #27ae60; font-weight: bold; font-size: 14px;"><i data-lucide="circle-check" class="app-icon" aria-hidden="true"></i> Servicio Finalizado</span>`;
-            // El botón de borrar queda vacío para que no se pueda eliminar accidentalmente
         } else {
-            // Diseño interactivo normal para turnos pendientes
             controlesHTML = `
-                <select class="selector-estado" onchange="cambiarEstado('${turno.id}', this.value)">
+                <select class="selector-estado" data-turno-id="${turno.id}">
                     <option value="programado" ${turno.estado === 'programado' ? 'selected' : ''}>Programado (Gris)</option>
                     <option value="check-in" ${turno.estado === 'check-in' ? 'selected' : ''}>Check-in (Amarillo)</option>
                     <option value="en_proceso" ${turno.estado === 'en_proceso' ? 'selected' : ''}>En Proceso (Naranja)</option>
@@ -757,31 +754,80 @@ function renderizarTurnos(turnos) {
     });
 }
 
+document.addEventListener('change', event => {
+    if (!(event.target instanceof HTMLSelectElement)) return;
+    const selector = event.target.closest('#lista-turnos .selector-estado');
+    if (!selector) return;
+
+    const turnoId = selector.dataset.turnoId;
+    const nuevoEstado = selector.value;
+    selector.disabled = true;
+    const estadoEspera = document.createElement('span');
+    estadoEspera.className = 'estado-actualizacion-turno';
+    estadoEspera.textContent = ' Procesando...';
+    selector.insertAdjacentElement('afterend', estadoEspera);
+
+    cambiarEstado(turnoId, nuevoEstado).catch(error => {
+        console.error('No se pudo actualizar el estado del turno:', error);
+        alert(`No se pudo completar la operación: ${error.message || error}. Se actualizará la lista de turnos.`);
+        cargarTurnos().catch(errorCarga => {
+            console.error('No se pudo actualizar la lista de turnos:', errorCarga);
+            alert('Tampoco se pudo actualizar la lista. Recarga la página antes de volver a intentarlo.');
+        });
+    });
+});
+
 // Función para actualizar la base de datos (Sin descuento automático de stock)
 async function cambiarEstado(turnoId, nuevoEstado) {
-    // A. Actualizamos el color en Supabase como siempre
-    const { error } = await clienteDb
-        .from('turnos')
-        .update({ estado: nuevoEstado })
-        .eq('id', turnoId);
+    let servicioRealizado = null;
+    let precio = null;
+    let precioTotal = null;
 
-    if (error) {
-        alert("Error al actualizar el estado. Revisa los permisos.");
-        console.error(error);
-        return; 
+    if (nuevoEstado === 'finalizado') {
+        servicioRealizado = prompt("¿Qué servicio se realizó? (Ej.: corte, coloración, mechas)");
+        if (servicioRealizado === null) {
+            await cargarTurnos();
+            return;
+        }
+        servicioRealizado = servicioRealizado.trim();
+        if (!servicioRealizado) {
+            alert("Ingresa el servicio realizado para poder finalizar el turno.");
+            await cargarTurnos();
+            return;
+        }
+
+        precio = prompt("¿Cuál fue el precio total cobrado al cliente? (Ej: 15000)");
+        if (precio === null) {
+            await cargarTurnos();
+            return;
+        }
+
+        precioTotal = Number(precio.trim().replace(',', '.'));
+        if (!Number.isFinite(precioTotal) || precioTotal <= 0) {
+            alert("Ingresa un precio válido mayor que cero. El turno no se finalizó.");
+            await cargarTurnos();
+            return;
+        }
+    }
+
+    if (nuevoEstado !== 'finalizado') {
+        const { error } = await clienteDb
+            .from('turnos')
+            .update({ estado: nuevoEstado })
+            .eq('id', turnoId)
+            .eq('peluqueria_id', peluqueriaIdActual);
+
+        if (error) {
+            alert("Error al actualizar el estado. Revisa los permisos.");
+            console.error(error);
+        }
+        await cargarTurnos();
+        return;
     }
 
     // B. LÓGICA DE CAJA Y RESEÑA
     if (nuevoEstado === 'finalizado') {
-        const resena = prompt("Turno finalizado. Escribe una breve reseña del trabajo realizado (Ej. Mechas con gorro, decoloración suave):");
-        
-        // Ya no preguntamos por la tintura, pasamos directo al cobro
-        const precio = prompt("¿Cuál fue el precio total cobrado al cliente? (Ej: 15000)");
-
-        if (precio !== null && resena !== null) {
-            // Mostramos la nota recordatoria inmediatamente después de ingresar el cobro
-            alert("Nota: Actualizar el stock de productos en el caso de haber utilizado.");
-
+        if (precio !== null && servicioRealizado !== null) {
             const RENDER_URL = 'https://apflekiyo.onrender.com'; 
             
             try {
@@ -789,20 +835,22 @@ async function cambiarEstado(turnoId, nuevoEstado) {
                 if (sessionError) throw sessionError;
                 if (!sessionData.session) throw new Error('Inicia sesión nuevamente para registrar el cobro.');
 
-                // 1. Guardamos la reseña en el turno
-                await clienteDb.from('turnos').update({ resena: resena }).eq('id', turnoId);
-                
-                // 2. Averiguamos qué peluquero atendió este turno para su comisión
+                // Averiguamos qué peluquero atendió este turno para su comisión
                 const { data: turnoInfo, error: errorTurno } = await clienteDb
                     .from('turnos')
                     .select('peluquero_id')
                     .eq('id', turnoId)
+                    .eq('peluqueria_id', peluqueriaIdActual)
                     .single();
                 if (errorTurno) throw errorTurno;
                 if (!turnoInfo?.peluquero_id) throw new Error('El turno no tiene un profesional asignado.');
 
-                // 3. Enviamos el paquete de datos al servidor (fijamos gramosUsados en 0)
-                const respuesta = await fetch(`${RENDER_URL}/api/finalizar-turno`, {
+                // Registramos el cobro antes de marcar el turno como finalizado.
+                const controlador = new AbortController();
+                const tiempoLimite = setTimeout(() => controlador.abort(), 90000);
+                let respuesta;
+                try {
+                    respuesta = await fetch(`${RENDER_URL}/api/finalizar-turno`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -814,21 +862,44 @@ async function cambiarEstado(turnoId, nuevoEstado) {
                         peluqueroId: turnoInfo.peluquero_id,
                         insumoId: 1, 
                         gramosUsados: 0, // Mantenemos esta variable en 0 para que tu backend no falle
-                        precioTotal: Number(precio.trim().replace(',', '.'))
-                    })
-                });
+                        precioTotal
+                    }),
+                    signal: controlador.signal
+                    });
+                } catch (error) {
+                    if (error.name === 'AbortError') {
+                        throw new Error('El servidor tardó demasiado en responder. Revisa la caja antes de volver a intentarlo para evitar duplicar el cobro.');
+                    }
+                    throw error;
+                } finally {
+                    clearTimeout(tiempoLimite);
+                }
 
                 const resultado = await respuesta.json().catch(() => ({}));
                 if (!respuesta.ok) throw new Error(resultado.error || 'No se pudo registrar el cobro en caja.');
-                await Promise.all([cargarCaja(), cargarCajaMensual()]);
+
+                const { error: errorFinalizacion } = await clienteDb
+                    .from('turnos')
+                    .update({
+                        estado: 'finalizado',
+                        descripcion_trabajo: servicioRealizado,
+                        resena: servicioRealizado
+                    })
+                    .eq('id', turnoId)
+                    .eq('peluqueria_id', peluqueriaIdActual);
+                if (errorFinalizacion) {
+                    throw new Error('El cobro se registró, pero no se pudo actualizar el turno. No vuelvas a registrar el cobro.');
+                }
+
+                await Promise.all([cargarTurnos(), cargarCaja(), cargarCajaMensual()]);
                 alert(resultado.mensaje || "El cobro se registró correctamente.");
+                alert("Recordatorio: actualiza el stock de productos si utilizaste alguno.");
                 
             } catch (errorRender) {
                 console.error("Error al conectar con Render:", errorRender);
-                alert(`El turno se marcó como finalizado, pero no se pudo registrar el cobro en caja: ${errorRender.message}`);
+                alert(`No se pudo completar la finalización del turno: ${errorRender.message}`);
+                await cargarTurnos();
             }
-        } else {
-            alert("Operación cancelada. El turno se marcó como finalizado pero no se registraron los pagos.");
         }
     }
 }
