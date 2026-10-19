@@ -8,7 +8,7 @@ app.use(express.json()); // Permite recibir datos del frontend
 
 // 1. Conexión a Supabase desde el Servidor
 const SUPABASE_URL = 'https://xpufmicxmbhpqocrwgdz.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhwdWZtaWN4bWJocHFvY3J3Z2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1MzE1OTcsImV4cCI6MjEwMzEwNzU5N30.811oNtrlBbEvNvhxaLlvJBZtqSpU98ZQ9sORRh4EIu8'; // Pega tu clave súper larga aquí
+const SUPABASE_ANON_KEY = '******'; // Pega tu clave súper larga aquí
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // 2. Ruta de diagnóstico
@@ -19,40 +19,63 @@ app.get('/', (req, res) => {
 // 3. RUTA ACTUALIZADA: Finalizar turno (Stock + Caja)
 app.post('/api/finalizar-turno', async (req, res) => {
     // Ahora recibimos también el precio total y el ID del peluquero
-    const { turnoId, peluqueroId, insumoId, gramosUsados, precioTotal } = req.body;
+    const { turnoId, peluqueriaId, peluqueroId, insumoId, gramosUsados, precioTotal } = req.body;
 
     try {
+        const authorization = req.get('Authorization');
+        const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+        if (!token) {
+            return res.status(401).json({ error: "Debes iniciar sesión para registrar el cobro." });
+        }
+
+        const { data: authData, error: authError } = await supabase.auth.getUser(token);
+        if (authError || !authData.user) {
+            return res.status(401).json({ error: "La sesión no es válida. Inicia sesión nuevamente." });
+        }
+
+        const supabaseAutenticado = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            global: { headers: { Authorization: `Bearer ${token}` } }
+        });
+
+        if (!turnoId || !peluqueriaId || !peluqueroId || !Number.isFinite(Number(precioTotal)) || Number(precioTotal) <= 0) {
+            return res.status(400).json({ error: "Faltan datos válidos para registrar el cobro del turno." });
+        }
+
         // --- A. LÓGICA DE INVENTARIO (PAÑOL) ---
         if (gramosUsados > 0) {
-            const { data: insumo } = await supabase.from('insumos').select('stock_gramos').eq('id', insumoId).single();
+            const { data: insumo, error: errorInsumo } = await supabaseAutenticado.from('insumos').select('stock_gramos').eq('id', insumoId).single();
+            if (errorInsumo) throw errorInsumo;
             if (insumo) {
                 const nuevoStock = insumo.stock_gramos - gramosUsados;
-                await supabase.from('insumos').update({ stock_gramos: nuevoStock }).eq('id', insumoId);
+                const { error } = await supabaseAutenticado.from('insumos').update({ stock_gramos: nuevoStock }).eq('id', insumoId);
+                if (error) throw error;
             }
         }
 
         // --- B. LÓGICA DE CAJA Y COMISIONES ---
-        if (precioTotal > 0 && peluqueroId) {
-            // 1. Buscamos qué porcentaje le toca a este peluquero
-            const { data: peluquero } = await supabase.from('peluqueros').select('porcentaje_comision').eq('id', peluqueroId).single();
-            
-            // Si por alguna razón no lo encuentra, usa 50% por defecto
-            const porcentaje = peluquero ? peluquero.porcentaje_comision : 50; 
-            
-            // 2. Matemática simple: Calculamos la comisión
-            const montoComision = (precioTotal * porcentaje) / 100;
+        const { data: peluquero, error: errorPeluquero } = await supabaseAutenticado
+            .from('peluqueros')
+            .select('porcentaje_comision')
+            .eq('id', peluqueroId)
+            .eq('peluqueria_id', peluqueriaId)
+            .single();
+        if (errorPeluquero) throw errorPeluquero;
 
-            // 3. Guardamos el registro en el libro contable (caja)
-            await supabase.from('caja').insert([{
-                turno_id: turnoId,
-                peluquero_id: peluqueroId,
-                monto_total: precioTotal,
-                monto_comision: montoComision
-            }]);
-        }
+        const porcentaje = Number(peluquero.porcentaje_comision);
+        if (!Number.isFinite(porcentaje)) throw new Error('El profesional no tiene un porcentaje de comisión válido.');
+        const montoComision = (Number(precioTotal) * porcentaje) / 100;
+
+        const { error: errorCaja } = await supabaseAutenticado.from('caja').insert([{
+            peluqueria_id: peluqueriaId,
+            turno_id: turnoId,
+            peluquero_id: peluqueroId,
+            monto_total: Number(precioTotal),
+            monto_comision: montoComision
+        }]);
+        if (errorCaja) throw errorCaja;
 
         // Respondemos al frontend que todo el proceso doble fue un éxito
-        res.json({ mensaje: "¡Éxito! Stock descontado y pago registrado en la caja correctamente." });
+        res.json({ mensaje: "¡Éxito! El pago fue registrado en la caja correctamente." });
 
     } catch (error) {
         console.error("Error en el servidor:", error);
