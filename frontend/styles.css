@@ -541,6 +541,18 @@ button, input, select, textarea {
     border-bottom: 2px solid #eee; 
     padding-bottom: 10px; 
 }
+.toggle-montos-caja {
+    float: right;
+    padding: 4px;
+    border: 0;
+    border-radius: 4px;
+    background: transparent;
+    color: #2c3e50;
+    cursor: pointer;
+}
+.toggle-montos-caja:hover {
+    background: #f2f4f5;
+}
 .comision-item { 
     display: flex; 
     justify-content: space-between; 

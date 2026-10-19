@@ -1068,6 +1068,9 @@ async function guardarNuevoTelefono(clienteId) {
 }
 
 // --- 6. MÓDULO DE CAJA Y REPORTE PDF ---
+let mostrarMontosCajaHoy = false;
+let registrosCajaHoy = [];
+
 async function cargarCaja() {
     if (!haySesionActiva()) return;
 
@@ -1080,7 +1083,10 @@ async function cargarCaja() {
         .eq('peluqueria_id', peluqueriaIdActual) // <-- NUEVO FILTRO
         .gte('fecha_cobro', inicioDelDia.toISOString());
 
-    if (!error) renderizarCaja(registros);
+    if (!error) {
+        registrosCajaHoy = registros || [];
+        renderizarCaja(registrosCajaHoy);
+    }
 }
 
 function renderizarCaja(registros) {
@@ -1097,12 +1103,29 @@ function renderizarCaja(registros) {
         comisiones[nombrePeluquero] += Number(reg.monto_comision);
     });
 
-    let html = `<div class="totales-caja">Total Ingresos: $${totalCaja.toLocaleString()}</div><strong>Comisiones a pagar:</strong>`;
+    const etiquetaBoton = mostrarMontosCajaHoy ? 'Ocultar montos' : 'Mostrar montos';
+    const iconoBoton = mostrarMontosCajaHoy ? 'eye-off' : 'eye';
+    const mostrarMonto = monto => mostrarMontosCajaHoy ? `$${monto.toLocaleString()}` : '••••••';
+    let html = `
+        <button type="button" class="toggle-montos-caja" aria-label="${etiquetaBoton}" title="${etiquetaBoton}" aria-pressed="${mostrarMontosCajaHoy}">
+            <i data-lucide="${iconoBoton}" class="app-icon" aria-hidden="true"></i>
+        </button>
+        <div class="totales-caja">Total Ingresos: ${mostrarMonto(totalCaja)}</div>
+        <strong>Comisiones a pagar:</strong>`;
     for (const [nombre, monto] of Object.entries(comisiones)) {
-        html += `<div class="comision-item"><span>${nombre}</span><span style="color: #27ae60; font-weight: bold;">$${monto.toLocaleString()}</span></div>`;
+        html += `<div class="comision-item"><span>${nombre}</span><span style="color: #27ae60; font-weight: bold;">${mostrarMonto(monto)}</span></div>`;
     }
     contenedor.innerHTML = html;
+    if (window.lucide) window.lucide.createIcons();
 }
+
+document.addEventListener('click', event => {
+    const boton = event.target.closest('#resumen-caja .toggle-montos-caja');
+    if (!boton) return;
+
+    mostrarMontosCajaHoy = !mostrarMontosCajaHoy;
+    renderizarCaja(registrosCajaHoy);
+});
 
 async function cargarCajaMensual() {
     if (!haySesionActiva()) return;
