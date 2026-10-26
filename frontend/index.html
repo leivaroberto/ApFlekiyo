@@ -74,6 +74,13 @@
                     <button type="button" class="password-toggle" data-target="registro-confirm-password" aria-label="Mostrar contraseña" title="Mostrar contraseña"><i data-lucide="eye" class="app-icon" aria-hidden="true"></i></button>
                 </div>
                 <input type="text" id="registro-peluqueria-nombre" class="login-input" placeholder="Nombre del salón">
+                <div class="terms-acceptance">
+                    <input type="checkbox" id="registro-acepta-terminos" required>
+                    <div>
+                        <label for="registro-acepta-terminos">Acepto el Acuerdo de Uso y Términos del Servicio.</label>
+                        <button type="button" class="terms-link" onclick="abrirTerminos()">Leer los términos</button>
+                    </div>
+                </div>
                 <button onclick="registrarUsuario()" class="login-button secondary">Crear usuario</button>
             </div>
 
@@ -85,6 +92,71 @@
             <p id="login-mensaje" class="login-message"></p>
         </div>
     </div>
+
+    <dialog id="dialogo-terminos" class="terms-dialog" aria-labelledby="terminos-titulo">
+        <div class="terms-dialog-header">
+            <div>
+                <p class="terms-dialog-eyebrow">AppFlekiyo</p>
+                <h2 id="terminos-titulo">Acuerdo de Uso y Términos del Servicio</h2>
+                <p class="terms-dialog-date">Última actualización: Octubre 2026</p>
+            </div>
+            <button type="button" class="terms-dialog-close" onclick="cerrarTerminos()" aria-label="Cerrar términos">&times;</button>
+        </div>
+        <div class="terms-dialog-content">
+            <p>Al crear una cuenta y acceder a <strong>AppFlekiyo</strong>, el usuario (en adelante "El Salón" o "El Usuario") acepta cumplir con los siguientes Términos y Condiciones.</p>
+
+            <section>
+                <h3>1. Descripción del Servicio</h3>
+                <p>AppFlekiyo es un sistema de gestión integral (SaaS) diseñado para peluquerías y salones de belleza. Incluye:</p>
+                <ul>
+                    <li>Agenda y calendario de turnos en tiempo real.</li>
+                    <li>Control de insumos y stock.</li>
+                    <li>Registro de caja diaria, balance mensual y cálculo de comisiones.</li>
+                    <li>Envío de recordatorios operativos y notificaciones web.</li>
+                </ul>
+            </section>
+
+            <section>
+                <h3>2. Modalidad de Pago y Suscripción</h3>
+                <ol>
+                    <li><strong>Medio de Pago Exclusivo:</strong> El acceso al servicio se gestiona mediante pago de suscripción periódica efectuado únicamente vía transferencia bancaria o virtual a la cuenta de Mercado Pago:
+                        <ul>
+                            <li><strong>Plataforma:</strong> Mercado Pago</li>
+                            <li><strong>Alias de transferencia:</strong> <code>leiva.roberto.mp</code></li>
+                        </ul>
+                    </li>
+                    <li><strong>Acreditación y Activación:</strong> Una vez realizada la transferencia, el usuario debe enviar el comprobante digital (vía WhatsApp o email) indicando el nombre del salón registrado para la renovación.</li>
+                    <li><strong>Sin Débitos Automáticos:</strong> La plataforma <strong>no</strong> realiza cobros automáticos ni almacena datos bancarios o de tarjetas de crédito/débito.</li>
+                    <li><strong>Suspensión por Falta de Pago:</strong> Si no se registra la transferencia del nuevo período antes del vencimiento, el acceso a las funciones del sistema podrá suspenderse temporalmente hasta regularizar el pago.</li>
+                </ol>
+            </section>
+
+            <section>
+                <h3>3. Registro de Cuenta y Seguridad</h3>
+                <ol>
+                    <li>Cada establecimiento ingresa con credenciales únicas de correo electrónico y contraseña.</li>
+                    <li>La información cargada (clientes, turnos, ventas e inventario) está resguardada mediante políticas de seguridad a nivel de fila (<strong>Row Level Security - RLS</strong>) sobre la base de datos Supabase, garantizando que los datos de un salón no sean accesibles por otro.</li>
+                    <li>El usuario es responsable de mantener la confidencialidad de su contraseña.</li>
+                </ol>
+            </section>
+
+            <section>
+                <h3>4. Uso de Notificaciones y Comunicaciones</h3>
+                <ol>
+                    <li>La plataforma requiere permisos del navegador para emitir notificaciones locales (<strong>Web Notifications API</strong>) sobre la proximidad de los turnos.</li>
+                    <li>Los recordatorios por WhatsApp son herramientas de apoyo operativo; la confirmación final de asistencia permanece bajo responsabilidad del salón y sus clientes.</li>
+                </ol>
+            </section>
+
+            <section>
+                <h3>5. Modificaciones</h3>
+                <p>El desarrollador se reserva el derecho de actualizar los presentes términos para incorporar mejoras o nuevas funciones, notificando oportunamente a los usuarios a través del sistema.</p>
+            </section>
+        </div>
+        <div class="terms-dialog-footer">
+            <button type="button" class="login-button secondary" onclick="cerrarTerminos()">Cerrar</button>
+        </div>
+    </dialog>
     
     <!-- MENÚ DE PESTAÑAS (Navegación principal) -->
     <nav class="menu-solapas">

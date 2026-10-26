@@ -105,6 +105,14 @@ function mostrarRecuperacion() {
     if (mensaje) mensaje.innerText = '';
 }
 
+function abrirTerminos() {
+    document.getElementById('dialogo-terminos').showModal();
+}
+
+function cerrarTerminos() {
+    document.getElementById('dialogo-terminos').close();
+}
+
 function mostrarFormularioNuevaPassword() {
     document.getElementById('login-formulario')?.classList.add('hidden');
     document.getElementById('registro-form')?.classList.remove('visible');
@@ -242,8 +250,15 @@ async function registrarUsuario() {
     const password = document.getElementById('registro-password').value;
     const confirmPassword = document.getElementById('registro-confirm-password').value;
     const nombreSalon = document.getElementById('registro-peluqueria-nombre').value.trim();
+    const aceptaTerminos = document.getElementById('registro-acepta-terminos');
     const mensaje = document.getElementById('login-mensaje');
     const boton = document.querySelector('#registro-form .login-button');
+
+    if (!aceptaTerminos.checked) {
+        mensaje.innerText = 'Debes aceptar el Acuerdo de Uso y los Términos del Servicio para crear una cuenta.';
+        mensaje.style.color = 'red';
+        return;
+    }
 
     if (!nombre || !email || !password || !confirmPassword || !nombreSalon) {
         mensaje.innerText = 'Completa todos los campos, incluido el nombre del salón.';
@@ -263,6 +278,8 @@ async function registrarUsuario() {
         return;
     }
 
+    const fechaAceptacionTerminos = new Date().toISOString();
+
     // Evita doble clic (antes cada clic podía crear un salón nuevo)
     if (boton) boton.disabled = true;
 
@@ -273,7 +290,8 @@ async function registrarUsuario() {
             options: {
                 data: {
                     nombre_completo: nombre,
-                    nombre_salon: nombreSalon
+                    nombre_salon: nombreSalon,
+                    terminos_aceptados_en: fechaAceptacionTerminos
                 }
             }
         });
@@ -303,6 +321,7 @@ async function registrarUsuario() {
         document.getElementById('registro-password').value = '';
         document.getElementById('registro-confirm-password').value = '';
         document.getElementById('registro-peluqueria-nombre').value = '';
+        aceptaTerminos.checked = false;
 
         // mostrarLogin() limpia el mensaje, así que se restaura después
         const texto = mensaje.innerText;
