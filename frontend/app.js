@@ -15,29 +15,16 @@ function haySesionActiva() {
     return !!usuarioActual && !!peluqueriaIdActual;
 }
 
-function cerrarSesion() {
-    peluqueriaIdActual = null;
-    usuarioActual = null;
-
-    const loginOverlay = document.getElementById('pantalla-login');
-    if (loginOverlay) {
-        loginOverlay.style.display = 'flex';
+async function cerrarSesion() {
+    const { error } = await clienteDb.auth.signOut({ scope: 'local' });
+    if (error) {
+        console.error('Error al cerrar la sesión:', error);
+        alert('No se pudo cerrar la sesión. Inténtalo nuevamente.');
+        return;
     }
 
-    const mensaje = document.getElementById('login-mensaje');
-    if (mensaje) {
-        mensaje.innerText = '';
-    }
-
-    const emailInput = document.getElementById('login-email');
-    const passwordInput = document.getElementById('login-password');
-    if (emailInput) emailInput.value = '';
-    if (passwordInput) passwordInput.value = '';
-
-    const titulo = document.getElementById('titulo-peluqueria');
-    if (titulo) {
-        titulo.innerText = 'Peluqueria / Estilistas';
-    }
+    if (temporizadorAlarmas) clearInterval(temporizadorAlarmas);
+    window.location.reload();
 }
 
 function mostrarRegistro() {
@@ -392,7 +379,6 @@ function inicializarApp() {
     // --- 11. ARRANQUE AUTOMÁTICO ---
     cargarPeluquerosDropdown();
     cargarClientesDropdown();
-    cargarInventario();
     cargarCaja();
     cargarCajaMensual();
     cargarTurnos();
@@ -1294,36 +1280,6 @@ function escaparHtml(valor) {
     })[caracter]);
 }
 
-async function cargarInventario() {
-    if (!haySesionActiva()) return;
-
-    const { data: insumos, error } = await clienteDb
-        .from('insumos')
-        .select('*')
-        .eq('peluqueria_id', peluqueriaIdActual)
-        .order('nombre', { ascending: true });
-        
-    if (!error) renderizarInventario(insumos);
-}
-
-function renderizarInventario(insumos) {
-    const contenedor = document.getElementById('lista-insumos');
-    if (!contenedor) return;
-    contenedor.innerHTML = '';
-    
-    if (insumos.length === 0) return contenedor.innerHTML = '<p>No hay productos en el pañol.</p>';
-
-    insumos.forEach(insumo => {
-        const unidad = insumo.unidad_medida || 'g'; 
-        const umbralAlerta = (unidad === 'u') ? 10 : 100;
-        
-        const div = document.createElement('div');
-        div.className = 'item-insumo';
-        const claseStock = insumo.stock_gramos <= umbralAlerta ? 'stock-bajo' : '';
-        div.innerHTML = `<span>${insumo.nombre}</span><span class="${claseStock}">${insumo.stock_gramos} ${unidad}</span>`;
-        contenedor.appendChild(div);
-    });
-}
 // Función para guardar un nuevo producto en el pañol
 async function crearProductoNuevo() {
     if (typeof haySesionActiva === 'function' && !haySesionActiva()) return;
@@ -1362,7 +1318,6 @@ async function crearProductoNuevo() {
         document.getElementById('nuevo-producto-categoria').value = '';
         document.getElementById('nuevo-producto-stock').value = '';
         cargarProductosAdmin(); 
-        if (typeof cargarInventario === 'function') cargarInventario();
     }
 }
 async function cargarProductosAdmin() {
@@ -1504,7 +1459,6 @@ async function modificarStock(insumoId, stockActual, unidad, accion) {
         alert("Ocurrió un error al actualizar el inventario.");
     } else {
         cargarProductosAdmin(); // Recarga la tabla
-        cargarInventario(); // Recarga el widget de stock rápido (si aplica)
     }
 }
 
@@ -1523,9 +1477,8 @@ async function eliminarProducto(insumoId) {
         alert("Ocurrió un error al eliminar el producto.");
         return;
     }
-
     cargarProductosAdmin();
-    cargarInventario();
+    cargarProductosAdmin();
 }
 
 // --- 8. MÓDULO RESERVA AVANZADA Y PRÓXIMOS TURNOS ---
@@ -1548,15 +1501,33 @@ async function cargarClientesDropdown() {
 async function cargarPeluquerosDropdown() {
     if (!haySesionActiva()) return;
 
-    const { data: peluqueros } = await clienteDb.from('peluqueros').select('*').eq('peluqueria_id', peluqueriaIdActual).order('nombre', { ascending: true });
-    if (!peluqueros) return;
+    const { data: peluqueros, error } = await clienteDb
+        .from('peluqueros')
+        .select('id, nombre, activo')
+        .eq('peluqueria_id', peluqueriaIdActual)
+        .order('nombre', { ascending: true });
+    if (error) {
+        console.error('Error al cargar los profesionales:', error);
+        alert("No se pudieron cargar los profesionales.");
+        return;
+    }
 
-    let html = '<option value="">-- Selecciona un profesional --</option>';
-    peluqueros.forEach(p => html += `<option value="${p.id}">${p.nombre}</option>`);
+    const profesionales = peluqueros || [];
+    const generarOpciones = lista => lista
+        .map(p => `<option value="${p.id}">${escaparHtml(p.nombre)}</option>`)
+        .join('');
+    const htmlActivos = `<option value="">-- Selecciona un profesional --</option>${generarOpciones(profesionales.filter(p => p.activo))}`;
+    const profesionalesReporte = [
+        ...profesionales.filter(p => p.activo),
+        ...profesionales.filter(p => !p.activo)
+    ];
+    const htmlReporte = `<option value="">-- Selecciona un profesional --</option>${profesionalesReporte
+        .map(p => `<option value="${p.id}">${escaparHtml(p.nombre)}${p.activo ? '' : ' (archivado)'}</option>`)
+        .join('')}`;
 
-    if(document.getElementById('select-peluquero-avanzado')) document.getElementById('select-peluquero-avanzado').innerHTML = html;
-    if(document.getElementById('select-peluquero')) document.getElementById('select-peluquero').innerHTML = html;
-    if(document.getElementById('select-peluquero-reporte')) document.getElementById('select-peluquero-reporte').innerHTML = html;
+    if(document.getElementById('select-peluquero-avanzado')) document.getElementById('select-peluquero-avanzado').innerHTML = htmlActivos;
+    if(document.getElementById('select-peluquero')) document.getElementById('select-peluquero').innerHTML = htmlActivos;
+    if(document.getElementById('select-peluquero-reporte')) document.getElementById('select-peluquero-reporte').innerHTML = htmlReporte;
 }
 
 async function crearTurnoNuevo() {
@@ -1757,9 +1728,19 @@ async function cargarPeluquerosAdmin() {
     const contenedor = document.getElementById('lista-peluqueros-admin');
     if(!contenedor) return;
     
-    const { data: peluqueros } = await clienteDb.from('peluqueros').select('*').eq('peluqueria_id', peluqueriaIdActual).order('nombre', { ascending: true });
+    const { data: peluqueros, error } = await clienteDb
+        .from('peluqueros')
+        .select('*')
+        .eq('peluqueria_id', peluqueriaIdActual)
+        .eq('activo', true)
+        .order('nombre', { ascending: true });
+    if (error) {
+        console.error('Error al cargar los profesionales:', error);
+        contenedor.innerHTML = '<p>No se pudieron cargar los profesionales.</p>';
+        return;
+    }
     let html = '';
-    peluqueros.forEach(p => {
+    (peluqueros || []).forEach(p => {
         const telefono = (p.telefono || 'No informado').replace(/[&<>"']/g, caracter => ({
             '&': '&amp;',
             '<': '&lt;',
@@ -1815,16 +1796,48 @@ async function editarTelefonoPeluquero(id) {
 }
 
 async function borrarPeluquero(id) {
-    if(confirm("¿Borrar este profesional? No se pueden borrar si tienen turnos asignados.")) {
-        await clienteDb.from('peluqueros').delete().eq('id', id);
-        cargarPeluquerosAdmin();
-        cargarPeluquerosDropdown();
+    if (!haySesionActiva()) return;
+
+    const { data: turnos, error: errorTurnos } = await clienteDb
+        .from('turnos')
+        .select('id, estado')
+        .eq('peluquero_id', id)
+        .eq('peluqueria_id', peluqueriaIdActual);
+    if (errorTurnos) {
+        console.error('Error al comprobar los turnos del profesional:', errorTurnos);
+        return alert("No se pudieron comprobar los turnos del profesional. Inténtalo nuevamente.");
     }
+
+    if ((turnos || []).some(turno => turno.estado !== 'finalizado')) {
+        return alert("No se puede borrar este profesional porque tiene turnos pendientes o en curso. Solo se puede borrar cuando todos sus turnos estén finalizados.");
+    }
+
+    if (!confirm("¿Borrar este profesional? Se quitará de las listas, pero se conservará su historial de turnos y cobros.")) return;
+
+    const { data, error } = await clienteDb
+        .from('peluqueros')
+        .update({ activo: false })
+        .eq('id', id)
+        .eq('peluqueria_id', peluqueriaIdActual)
+        .eq('activo', true)
+        .select('id')
+        .maybeSingle();
+
+    if (error) {
+        console.error('Error al borrar el profesional:', error);
+        return alert("No se pudo borrar el profesional. Inténtalo nuevamente.");
+    }
+
+    if (!data) {
+        return alert("No se encontró el profesional activo en este salón o no tienes permiso para borrarlo.");
+    }
+
+    await Promise.all([cargarPeluquerosAdmin(), cargarPeluquerosDropdown()]);
 }
 
 // --- 10. TIEMPO REAL (WEBSOCKETS) ---
 clienteDb.channel('cambios-en-turnos').on('postgres_changes', { event: '*', schema: 'public', table: 'turnos' }, () => { cargarTurnos(); if(calendarioGlobal) cargarCalendario(); cargarProximosTurnos(); }).subscribe();
-clienteDb.channel('cambios-en-insumos').on('postgres_changes', { event: '*', schema: 'public', table: 'insumos' }, () => { cargarInventario(); }).subscribe();
+clienteDb.channel('cambios-en-insumos').on('postgres_changes', { event: '*', schema: 'public', table: 'insumos' }, () => { cargarProductosAdmin(); }).subscribe();
 clienteDb.channel('cambios-en-caja').on('postgres_changes', { event: '*', schema: 'public', table: 'caja' }, () => { cargarCaja(); cargarCajaMensual(); }).subscribe();
 
 
